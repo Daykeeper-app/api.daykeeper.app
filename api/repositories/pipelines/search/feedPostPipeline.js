@@ -346,6 +346,191 @@ const feedPostPipeline = (
       },
     },
 
+    // notes list
+    {
+      $lookup: {
+        from: "dayNote",
+        let: {
+          uid: "$_id",
+          dayStart: "$dayStart",
+          dayEnd: "$dayEnd",
+          viewerId: mainUserId,
+          isCloseFriend: "$isCloseFriend",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$user", "$$uid"] },
+                  { $gte: ["$date", "$$dayStart"] },
+                  { $lt: ["$date", "$$dayEnd"] },
+                ],
+              },
+            },
+          },
+          { $match: { $expr: visibilityExpr } },
+          {
+            $project: {
+              _id: 1,
+              text: 1,
+              privacy: 1,
+              user: 1,
+              date: 1,
+              created_at: 1,
+            },
+          },
+        ],
+        as: "note_items",
+      },
+    },
+
+    // tasks list
+    {
+      $lookup: {
+        from: "dayTask",
+        let: {
+          uid: "$_id",
+          dayStart: "$dayStart",
+          dayEnd: "$dayEnd",
+          viewerId: mainUserId,
+          isCloseFriend: "$isCloseFriend",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$user", "$$uid"] },
+                  { $gte: ["$date", "$$dayStart"] },
+                  { $lt: ["$date", "$$dayEnd"] },
+                ],
+              },
+            },
+          },
+          { $match: { $expr: visibilityExpr } },
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              completed: 1,
+              privacy: 1,
+              user: 1,
+              date: 1,
+              created_at: 1,
+            },
+          },
+        ],
+        as: "task_items",
+      },
+    },
+
+    // events list
+    {
+      $lookup: {
+        from: "dayEvent",
+        let: {
+          uid: "$_id",
+          dayStart: "$dayStart",
+          dayEnd: "$dayEnd",
+          viewerId: mainUserId,
+          isCloseFriend: "$isCloseFriend",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$user", "$$uid"] },
+                  { $gte: ["$dateStart", "$$dayStart"] },
+                  { $lt: ["$dateStart", "$$dayEnd"] },
+                ],
+              },
+            },
+          },
+          { $match: { $expr: visibilityExpr } },
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              description: 1,
+              location: 1,
+              privacy: 1,
+              user: 1,
+              dateStart: 1,
+              dateEnd: 1,
+              createdAt: 1,
+            },
+          },
+        ],
+        as: "event_items",
+      },
+    },
+
+    // build mixed items
+    {
+      $addFields: {
+        mixedItems: {
+          $concatArrays: [
+            {
+              $map: {
+                input: "$posts",
+                as: "p",
+                in: {
+                  type: "post",
+                  sortDate: "$$p.date",
+                  item: "$$p",
+                },
+              },
+            },
+            {
+              $map: {
+                input: "$note_items",
+                as: "n",
+                in: {
+                  type: "note",
+                  sortDate: "$$n.date",
+                  item: "$$n",
+                },
+              },
+            },
+            {
+              $map: {
+                input: "$task_items",
+                as: "t",
+                in: {
+                  type: "task",
+                  sortDate: "$$t.date",
+                  item: "$$t",
+                },
+              },
+            },
+            {
+              $map: {
+                input: "$event_items",
+                as: "e",
+                in: {
+                  type: "event",
+                  sortDate: "$$e.dateStart",
+                  item: "$$e",
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      $addFields: {
+        mixedItems: {
+          $slice: [
+            { $sortArray: { input: "$mixedItems", sortBy: { sortDate: -1 } } },
+            maxPostsPerUser,
+          ],
+        },
+      },
+    },
+
     {
       $unset: ["note_count", "task_count", "event_count", "dayStart", "dayEnd"],
     },
@@ -367,39 +552,52 @@ const feedPostPipeline = (
 
         userRelevance: 1,
 
-        posts: {
+        data: {
           $map: {
-            input: "$posts",
-            as: "p",
+            input: "$mixedItems",
+            as: "m",
             in: {
-              id: "$$p._id",
-              time: time12hExpr("$$p.date", tz),
+              type: "$$m.type",
+              id: "$$m.item._id",
+              time: time12hExpr("$$m.sortDate", tz),
               date: {
                 $dateToString: {
                   format: "%Y-%m-%d %H:%M:%S",
-                  date: "$$p.date",
+                  date: "$$m.sortDate",
                   timezone: tz,
                 },
               },
-              content: "$$p.data",
-              privacy: "$$p.privacy",
-              media: "$$p.media",
-              isOwner: "$$p.isOwner",
+              content: "$$m.item.data",
+              privacy: "$$m.item.privacy",
+              media: "$$m.item.media",
+              isOwner: "$$m.item.isOwner",
 
-              likes: "$$p.likes",
-              userLiked: "$$p.userLiked",
-              comments: "$$p.comments",
-              userCommented: "$$p.userCommented",
+              likes: "$$m.item.likes",
+              userLiked: "$$m.item.userLiked",
+              comments: "$$m.item.comments",
+              userCommented: "$$m.item.userCommented",
 
               edited_at: {
                 $dateToString: {
                   format: "%Y-%m-%d %H:%M:%S",
-                  date: "$$p.edited_at",
+                  date: "$$m.item.edited_at",
                   timezone: tz,
                 },
               },
 
-              relevance: "$$p.relevance",
+              relevance: "$$m.item.relevance",
+
+              // notes
+              text: "$$m.item.text",
+
+              // tasks
+              title: "$$m.item.title",
+              completed: "$$m.item.completed",
+
+              // events
+              description: "$$m.item.description",
+              location: "$$m.item.location",
+              dateEnd: "$$m.item.dateEnd",
             },
           },
         },

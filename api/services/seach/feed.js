@@ -1,6 +1,6 @@
 const Followers = require("../../models/Followers")
 const getDataWithPages = require("../getDataWithPages")
-const { feedPostPipeline } = require("../../repositories/index.js")
+const { feedUserMixedPipeline } = require("../../repositories/index.js")
 
 const {
   success: { fetched },
@@ -26,7 +26,6 @@ const feed = async (props) => {
     orderMode === "relevant" || orderMode === "follow_first"
       ? "relevant"
       : "recent"
-  const scope = (props.scope || "a").toLowerCase() // "following"
   const date = typeof props.date === "string" ? props.date.trim() : ""
   const dateStr = /^\d{2}-\d{2}-\d{4}$/.test(date) ? date : null
 
@@ -39,14 +38,12 @@ const feed = async (props) => {
 
     const response = await getDataWithPages(
       {
-        type: "Post",
-        pipeline: feedPostPipeline(loggedUser, {
-          scope,
+        type: "User",
+        pipeline: feedUserMixedPipeline(loggedUser, {
           dateStr,
-          orderMode,
           maxPostsPerUser,
         }),
-        orderForPaging,
+        order: orderForPaging,
         page,
         maxPageSize,
       },

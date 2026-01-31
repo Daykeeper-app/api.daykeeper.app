@@ -29,6 +29,7 @@ const searchEventPipeline = require("./pipelines/search/searchEventPipeline")
 const searchNotePipeline = require("./pipelines/search/searchNotePipeline")
 const searchTaskPipeline = require("./pipelines/search/searchTaskPipeline")
 const feedPostPipeline = require("./pipelines/search/feedPostPipeline")
+const feedUserMixedPipeline = require("./pipelines/search/feedUserMixedPipeline")
 
 // Hide Projects
 const hideUserData = require(`./hideProject/hideUserData`)
@@ -44,6 +45,7 @@ module.exports = {
   userPostsPipeline,
   reportedElementPipeline,
   feedPostPipeline,
+  feedUserMixedPipeline,
 
   // SEARCH
   searchPostPipeline,
