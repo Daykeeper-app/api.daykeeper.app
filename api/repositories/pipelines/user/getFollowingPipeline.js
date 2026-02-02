@@ -16,18 +16,18 @@ const getFollowingPipeline = (userId, mainUser) => [
   {
     $lookup: {
       from: "users",
-      localField: "followerId",
+      localField: "followingId",
       foreignField: "_id",
-      as: "followerInfo",
+      as: "followingInfo",
     },
   },
   {
-    $unwind: "$followerInfo",
+    $unwind: "$followingInfo",
   },
   {
     $replaceRoot: {
       newRoot: {
-        $mergeObjects: [{ followerId: "$followerId" }, "$followerInfo"],
+        $mergeObjects: [{ followingId: "$followingId" }, "$followingInfo"],
       },
     },
   },
