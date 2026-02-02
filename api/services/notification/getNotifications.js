@@ -4,6 +4,28 @@ const {
   success: { fetched },
 } = require("../../../constants/index")
 
+const getNotificationRoute = (notification) => {
+  const type = notification?.type
+  const data = notification?.data || {}
+
+  switch (type) {
+    case "new_follower":
+    case "follow_request_accepted":
+      return data.username ? `/${data.username}` : null
+    case "follow_request":
+      return "/settings/follow-requests"
+    case "post_like":
+    case "post_comment":
+    case "comment_like":
+    case "comment_reply":
+      return data.postId ? `/post/${data.postId}` : null
+    case "welcome":
+      return "/"
+    default:
+      return null
+  }
+}
+
 const getNotifications = async (props) => {
   const { loggedUser, page, maxPageSize, read } = props
 
@@ -21,7 +43,12 @@ const getNotifications = async (props) => {
     order: "recent",
   })
 
-  return fetched("notifications", { response })
+  const data = (response.data || []).map((notification) => ({
+    ...notification,
+    route: getNotificationRoute(notification),
+  }))
+
+  return fetched("notifications", { response: { ...response, data } })
 }
 
 module.exports = getNotifications
