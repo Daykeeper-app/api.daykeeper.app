@@ -75,17 +75,9 @@ const postInfoPipeline = (mainUser) => {
             $group: {
               _id: null,
               totalComments: { $sum: 1 },
-              userCommented: {
-                $push: {
-                  $cond: [
-                    { $eq: ["$userId", mainUserId] },
-                    {
-                      comment: "$comment",
-                      gif: "$gif",
-                      created_at: "$created_at",
-                    },
-                    false,
-                  ],
+              userCommentedCount: {
+                $sum: {
+                  $cond: [{ $eq: ["$userId", mainUserId] }, 1, 0],
                 },
               },
             },
@@ -102,7 +94,9 @@ const postInfoPipeline = (mainUser) => {
         likes: { $ifNull: ["$like_info.totalLikes", 0] },
         userLiked: { $gt: ["$like_info.userLiked", 0] },
         comments: { $ifNull: ["$comment_info.totalComments", 0] },
-        userCommented: { $ifNull: ["$comment_info.userCommented", false] },
+        userCommented: {
+          $gt: [{ $ifNull: ["$comment_info.userCommentedCount", 0] }, 0],
+        },
         relevance: {
           $add: [
             { $ifNull: ["$like_info.totalLikes", 0] },
