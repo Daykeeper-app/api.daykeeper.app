@@ -6,23 +6,11 @@ async function createMediaDocsMW(req, res, next) {
   if (!files) files = [req.file]
 
   try {
-    console.log("[media] createMediaDocsMW start", {
-      userId: req.user?._id,
-      filesCount: files.length,
-      hasFilesArray: Array.isArray(req.files),
-    })
     const placesIds = req?.body?.placesIds?.split(",") || []
 
     const mediaDocs = await Promise.all(
       files.map(async (file, index) => {
         const type = file.mimetype.startsWith("video") ? "video" : "image"
-
-        console.log("[media] createMediaDoc", {
-          originalname: file.originalname,
-          key: file.key,
-          type,
-          placeId: placesIds[index] || null,
-        })
 
         const doc = await Media.create({
           title: file.originalname,
@@ -35,11 +23,6 @@ async function createMediaDocsMW(req, res, next) {
           created_at: new Date(),
         })
 
-        console.log("[media] media doc created", {
-          mediaId: doc._id,
-          status: doc.status,
-        })
-
         file.mediaId = doc._id
         return doc
       })
@@ -48,10 +31,6 @@ async function createMediaDocsMW(req, res, next) {
     req.mediaDocs = mediaDocs
     files.forEach((file, i) => {
       file.mediaId = mediaDocs[i]._id
-    })
-
-    console.log("[media] createMediaDocsMW done", {
-      mediaIds: mediaDocs.map((m) => m._id),
     })
     next()
   } catch (err) {

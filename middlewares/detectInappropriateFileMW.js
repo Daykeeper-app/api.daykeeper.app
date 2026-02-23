@@ -12,23 +12,17 @@ async function detectInappropriateContentMW(req, res, next) {
   try {
     const trustScore = req.userTrustScore || 0
 
-    for (let media of req.mediaDocs) {
-      console.log("[media] enqueue moderation", {
-        mediaId: media._id,
-        key: media.key,
-        type: media.type,
-        trustScore,
-      })
-      await detectInappropriateContent(
-        media.key,
-        media.type,
-        media._id,
-        trustScore,
-        media.uploadedBy
+    await Promise.all(
+      req.mediaDocs.map((media) =>
+        detectInappropriateContent(
+          media.key,
+          media.type,
+          media._id,
+          trustScore,
+          media.uploadedBy
+        )
       )
-    }
-
-    console.log("[media] detectInappropriateFileMW done")
+    )
     next()
   } catch (error) {
     for (let media of req.mediaDocs) deleteFile({ key: media.key })

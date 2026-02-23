@@ -15,9 +15,9 @@ const feed = async (props) => {
       ? Number(props.maxPageSize)
       : DEFAULT_MAXPAGESIZE
     : DEFAULT_MAXPAGESIZE
-  const maxPostsPerUser = props.maxPageSize
-    ? Number(props.maxPageSize) <= DEFAULT_MAXPOSTSPERUSER
-      ? Number(props.maxPageSize)
+  const maxPostsPerUser = props.maxPostsPerUser
+    ? Number(props.maxPostsPerUser) <= DEFAULT_MAXPOSTSPERUSER
+      ? Number(props.maxPostsPerUser)
       : DEFAULT_MAXPOSTSPERUSER
     : DEFAULT_MAXPOSTSPERUSER
 

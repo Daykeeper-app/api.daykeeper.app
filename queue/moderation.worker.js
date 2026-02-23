@@ -18,6 +18,29 @@ const {
 AWS.config.update({ accessKeyId, secretAccessKey, region: defaultRegion })
 const rekognition = new AWS.Rekognition()
 const s3 = new AWS.S3()
+const parseBoundedInt = (value, fallback, min, max) => {
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+const workerConcurrency = parseBoundedInt(
+  process.env.MODERATION_WORKER_CONCURRENCY,
+  1,
+  1,
+  5
+)
+const workerDrainDelaySec = parseBoundedInt(
+  process.env.MODERATION_WORKER_DRAIN_DELAY_SEC,
+  30,
+  1,
+  120
+)
+const workerStalledIntervalMs = parseBoundedInt(
+  process.env.MODERATION_WORKER_STALLED_INTERVAL_MS,
+  60000,
+  5000,
+  300000
+)
 const connection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
 })
@@ -238,7 +261,12 @@ const worker = new Worker(
       fallbackUserId: job.data?.uploadedBy,
     })
   },
-  { connection },
+  {
+    connection,
+    concurrency: workerConcurrency,
+    drainDelay: workerDrainDelaySec,
+    stalledInterval: workerStalledIntervalMs,
+  },
 )
 
 worker.on("active", (job) => {

@@ -1,5 +1,29 @@
-const { enqueueModeration } = require("../../queue/moderation.queue")
 const Media = require("../models/Media")
+
+const parseBoundedNumber = (value, fallback, min, max) => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+
+const trustedThreshold = parseBoundedNumber(
+  process.env.MODERATION_TRUST_THRESHOLD,
+  70,
+  0,
+  100
+)
+const trustedSkipRateImage = parseBoundedNumber(
+  process.env.MODERATION_TRUSTED_SKIP_RATE_IMAGE,
+  0.8,
+  0,
+  1
+)
+const trustedSkipRateVideo = parseBoundedNumber(
+  process.env.MODERATION_TRUSTED_SKIP_RATE_VIDEO,
+  0.9,
+  0,
+  1
+)
 
 const detectInappropriateContent = async (
   key,
@@ -8,10 +32,10 @@ const detectInappropriateContent = async (
   trustScore,
   uploadedBy
 ) => {
-  const shouldSkip = trustScore >= 80 && Math.random() < 0.5
+  const skipRate = type === "video" ? trustedSkipRateVideo : trustedSkipRateImage
+  const shouldSkip = trustScore >= trustedThreshold && Math.random() < skipRate
 
-  if (shouldSkip && type != "image") {
-    console.log(`skipping ${mediaId}`)
+  if (shouldSkip) {
     await Media.findByIdAndUpdate(mediaId, {
       status: "public",
       verified: false,
@@ -20,14 +44,7 @@ const detectInappropriateContent = async (
     return true
   }
 
-  console.log(`======== ${mediaId} to the moderation Queue ========`)
-  console.log("[media] detectInappropriateContent enqueue", {
-    mediaId,
-    key,
-    type,
-    uploadedBy,
-    trustScore,
-  })
+  const { enqueueModeration } = require("../../queue/moderation.queue")
   await enqueueModeration({
     key,
     type,
@@ -35,14 +52,14 @@ const detectInappropriateContent = async (
     uploadedBy,
   })
 
-  await Media.findByIdAndUpdate(mediaId, {
-    status: "pending",
-    verified: false,
-  })
-
-  console.log("[media] detectInappropriateContent updated media to pending", {
-    mediaId,
-  })
+  // For videos, createMediaDocsMW already persists pending + verified=false.
+  // For images, force pending while moderation runs.
+  if (type === "image") {
+    await Media.findByIdAndUpdate(mediaId, {
+      status: "pending",
+      verified: false,
+    })
+  }
 
   return true
 }

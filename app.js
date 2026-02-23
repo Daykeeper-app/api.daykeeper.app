@@ -14,6 +14,13 @@ const rateLimit = require("./middlewares/rateLimit")
 
 const app = express()
 const isProd = process.env.NODE_ENV === "prod"
+const parseBool = (value, fallback) => {
+  if (value === undefined || value === null || value === "") return fallback
+  const normalized = String(value).trim().toLowerCase()
+  if (["true", "1", "yes", "on"].includes(normalized)) return true
+  if (["false", "0", "no", "off"].includes(normalized)) return false
+  return fallback
+}
 
 app.disable("x-powered-by")
 
@@ -129,8 +136,8 @@ app.use(passport.session())
 passportConfig(passport)
 
 // --------- Background workers/jobs (optional) ---------
-const startWorkers = process.env.WORKER_ENABLED !== "false"
-const startJobs = process.env.JOBS_ENABLED !== "false"
+const startWorkers = parseBool(process.env.WORKER_ENABLED, !isProd)
+const startJobs = parseBool(process.env.JOBS_ENABLED, !isProd)
 
 if (startWorkers) {
   require("./queue/index.js")

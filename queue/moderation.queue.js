@@ -6,23 +6,22 @@ const {
 } = require("../config")
 
 const connection = new IORedis(redisUrl)
+const parsedAttempts = Number(process.env.MODERATION_JOB_ATTEMPTS)
+const moderationJobAttempts = Number.isInteger(parsedAttempts)
+  ? Math.max(1, Math.min(parsedAttempts, 5))
+  : 1
 
 const moderationQueue = new Queue("moderationQueue", { connection })
 
 function enqueueModeration({ mediaId, key, type, uploadedBy }) {
-  console.log("[queue] enqueue moderation job", {
-    mediaId,
-    key,
-    type,
-    uploadedBy,
-  })
   return moderationQueue.add(
     "analyzeMedia",
     { mediaId, key, type, uploadedBy },
     {
-      attempts: 3,
+      attempts: moderationJobAttempts,
       backoff: { type: "exponential", delay: 3000 },
       removeOnComplete: true,
+      removeOnFail: true,
     }
   )
 }
