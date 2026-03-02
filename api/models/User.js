@@ -5,8 +5,6 @@ const userSchema = mongoose.Schema({
   username: {
     type: String,
     required: true,
-    unique: true,
-    index: true,
     trim: true,
   },
   name: {
@@ -22,8 +20,6 @@ const userSchema = mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
-    index: true,
     lowercase: true,
     trim: true,
   },
@@ -38,7 +34,7 @@ const userSchema = mongoose.Schema({
   verified_email: Boolean,
   private: Boolean,
   roles: [String], // ['user', 'admin']
-  google_id: { type: String, index: true, sparse: true, unique: true },
+  google_id: { type: String },
 
   // Post strikes, like Duolingo
   currentStreak: { type: Number, default: 0 },

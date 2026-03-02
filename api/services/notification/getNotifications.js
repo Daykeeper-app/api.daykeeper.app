@@ -46,6 +46,7 @@ const getNotifications = async (props) => {
 
   const data = (response.data || []).map((notification) => ({
     ...serializeMediaPayload(notification),
+    seen: Boolean(notification?.read),
     route: getNotificationRoute(notification),
   }))
 
