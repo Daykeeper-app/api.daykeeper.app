@@ -1,5 +1,6 @@
 const Post = require("../../models/Post")
 const deleteFile = require("../../utils/deleteFile")
+const mongoose = require("mongoose")
 
 const deletePostLikes = require("./delete/deletePostLikes")
 const deletePostComments = require("./delete/deletePostComments")
@@ -8,14 +9,29 @@ const deleteReports = require("../admin/delete/deleteReports")
 const deleteBanHistory = require("../admin/delete/deleteBanHistory")
 
 const {
-  errors: { notFound },
+  errors: { notFound, invalidValue },
   success: { deleted },
 } = require("../../../constants/index")
 
+function normalizePostId(value) {
+  if (!value) return ""
+  if (typeof value === "string") return value.trim()
+  if (typeof value === "object" && value !== null) {
+    if (typeof value._id === "string") return value._id.trim()
+    if (typeof value.id === "string") return value.id.trim()
+  }
+  return String(value).trim()
+}
+
 const deletePost = async ({ postId, loggedUser }) => {
+  const normalizedPostId = normalizePostId(postId)
+  if (!mongoose.Types.ObjectId.isValid(normalizedPostId)) {
+    return invalidValue("Post ID")
+  }
+
   // 1) Find post owned by user (secure)
-  const post = await Post.findOne({ _id: postId, user: loggedUser._id })
-  if (!post) throw notFound("Post")
+  const post = await Post.findOne({ _id: normalizedPostId, user: loggedUser._id })
+  if (!post) return notFound("Post")
 
   // Idempotency: if already deleted, return not found
   if (post.status === "deleted") return deleted("Post")
