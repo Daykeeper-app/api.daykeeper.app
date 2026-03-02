@@ -1,6 +1,7 @@
 const Post = require("../../models/Post")
 const getPostPipeline = require("../../repositories/pipelines/post/getPostPipeline")
 const mongoose = require("mongoose")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 const {
   errors: { notFound, invalidValue },
@@ -15,7 +16,7 @@ const getPost = async ({ postId, loggedUser }) => {
 
     if (!post || post?.length == 0) return notFound("Post")
 
-    return fetched("post", { data: post[0] })
+    return fetched("post", { data: serializeMediaPayload(post[0]) })
   } catch (error) {
     console.error(error)
     throw new Error(error.message)

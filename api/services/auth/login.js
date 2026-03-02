@@ -3,6 +3,7 @@ const {
   auth: { registerCodeExpiresTime },
   success: { custom },
 } = require("../../../constants/index")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 const {
   signAccessToken,
   makeRefreshToken,
@@ -10,13 +11,13 @@ const {
 } = require("../../utils/token")
 
 function sanitizeUser(user) {
-  return {
+  return serializeMediaPayload({
     id: user._id,
     username: user.username,
     email: user.email,
     profile_picture: user.profile_picture,
     roles: user.roles,
-  }
+  })
 }
 
 async function login(props) {

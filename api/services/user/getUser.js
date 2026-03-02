@@ -1,5 +1,6 @@
 const User = require("../../models/User")
 const getUserPipeline = require("../../repositories/pipelines/user/getUserPipeline")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 const {
   errors: { notFound },
   success: { fetched },
@@ -15,7 +16,7 @@ const getUser = async (props) => {
     if (!user[0]) return notFound("User")
 
     return fetched(`user`, {
-      data: user[0],
+      data: serializeMediaPayload(user[0]),
     })
   } catch (error) {
     console.error(error)

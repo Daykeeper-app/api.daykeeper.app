@@ -2,6 +2,7 @@ const Post = require("../../models/Post")
 const Media = require("../../models/Media")
 const deleteFile = require("../../utils/deleteFile")
 const getPost = require("./getPost")
+const { ensurePostMediaPrivacy } = require("../../utils/postMediaPrivacy")
 
 const deletePostLikes = require("./delete/deletePostLikes")
 const deletePostComments = require("./delete/deletePostComments")
@@ -39,6 +40,13 @@ function parseIdArray(input) {
   return []
 }
 
+function normalizePostPrivacy(privacy) {
+  if (typeof privacy !== "string") return privacy
+  const normalized = privacy.trim().toLowerCase().replace(/\s+/g, "_")
+  if (normalized === "close_friends") return "close friends"
+  return normalized
+}
+
 const updatePost = async (props) => {
   const {
     data,
@@ -51,6 +59,7 @@ const updatePost = async (props) => {
   } = props || {}
 
   const keepIds = parseIdArray(keepMediaIds)
+  const normalizedPrivacy = normalizePostPrivacy(privacy)
 
   try {
     // 1) Permission / existence check
@@ -95,8 +104,8 @@ const updatePost = async (props) => {
         : "pending"
 
     // 7) privacy change cleanup
-    if (privacy && post.privacy !== privacy) {
-      if (["private", "close_friends"].includes(privacy)) {
+    if (normalizedPrivacy && post.privacy !== normalizedPrivacy) {
+      if (["private", "close friends"].includes(normalizedPrivacy)) {
         await deletePostLikes({ postId: post._id, postUserId: post.user })
         await deletePostComments({ postId: post._id, postUserId: post.user })
         await deleteCommentLikes({ postId: post._id, postUserId: post.user })
@@ -105,7 +114,7 @@ const updatePost = async (props) => {
 
     // 8) update fields (assumes validated)
     if (data !== undefined) post.data = data
-    if (privacy !== undefined) post.privacy = privacy
+    if (normalizedPrivacy !== undefined) post.privacy = normalizedPrivacy
     if (emotion !== undefined) post.emotion = emotion // only if your schema has it
 
     post.media = allMedia.map((m) => m._id)
@@ -113,6 +122,12 @@ const updatePost = async (props) => {
     post.edited_at = new Date()
 
     await post.save()
+
+    const promotedMedia = allMedia.filter((m) => m.status === "public")
+    if (promotedMedia.length) {
+      await ensurePostMediaPrivacy({ post, medias: promotedMedia })
+    }
+
     return updated("post")
   } catch (error) {
     console.error(error)

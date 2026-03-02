@@ -1,4 +1,5 @@
 const getDataWithPages = require("../getDataWithPages")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 const {
   errors: { unauthorized },
   success: { fetched },
@@ -44,7 +45,7 @@ const getNotifications = async (props) => {
   })
 
   const data = (response.data || []).map((notification) => ({
-    ...notification,
+    ...serializeMediaPayload(notification),
     route: getNotificationRoute(notification),
   }))
 

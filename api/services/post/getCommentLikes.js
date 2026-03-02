@@ -10,6 +10,7 @@ const {
   errors: { notFound },
   success: { fetched },
 } = require("../../../constants/index")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 const getCommentLikes = async (props) => {
   const { commentId, loggedUser, page, maxPageSize } = props
@@ -35,7 +36,7 @@ const getCommentLikes = async (props) => {
 
     return fetched(`Comment Likes`, {
       response: {
-        post: post[0],
+        post: serializeMediaPayload(post[0]),
         commentId,
         ...usersThatLiked,
       },

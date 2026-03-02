@@ -16,7 +16,7 @@ async function createMediaDocsMW(req, res, next) {
           title: file.originalname,
           key: file.key,
           type,
-          url: file.url,
+          url: "",
           placeId: placesIds[index] || null,
           status: type === "video" ? "pending" : "public",
           uploadedBy: req.user._id,

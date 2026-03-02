@@ -4,7 +4,12 @@ const {
   post: { maxPostLength },
 } = require("../../../constants/index")
 
-const ALLOWED_PRIVACY = new Set(["public", "private", "close_friends"])
+const ALLOWED_PRIVACY = new Set([
+  "public",
+  "private",
+  "close friends",
+  "close_friends",
+])
 
 async function cleanupUploadedFiles(req) {
   const files = req.files || []
@@ -46,12 +51,13 @@ const postEditValidation = async (req, res, next) => {
       if (typeof privacy !== "string")
         return badRequest(400, "Invalid privacy value")
 
-      const normalized = privacy.trim().toLowerCase().replace(" ", "_")
+      const normalized = privacy.trim().toLowerCase().replace(/\s+/g, "_")
       if (!ALLOWED_PRIVACY.has(normalized))
         return badRequest(400, "Invalid privacy value")
 
       // normalize so controllers always receive your internal value
-      req.body.privacy = normalized
+      req.body.privacy =
+        normalized === "close_friends" ? "close friends" : normalized
     }
 
     // emotion (0..100 integer)

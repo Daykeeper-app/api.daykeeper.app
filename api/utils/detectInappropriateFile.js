@@ -1,4 +1,6 @@
 const Media = require("../models/Media")
+const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase()
+const isProd = nodeEnv === "prod" || nodeEnv === "production"
 
 const parseBoundedNumber = (value, fallback, min, max) => {
   const parsed = Number(value)
@@ -32,6 +34,16 @@ const detectInappropriateContent = async (
   trustScore,
   uploadedBy
 ) => {
+  // Dev/local cheap mode: avoid Redis/BullMQ/AWS moderation costs entirely.
+  if (!isProd) {
+    await Media.findByIdAndUpdate(mediaId, {
+      status: "public",
+      verified: false,
+      skippedModeration: true,
+    })
+    return true
+  }
+
   const skipRate = type === "video" ? trustedSkipRateVideo : trustedSkipRateImage
   const shouldSkip = trustScore >= trustedThreshold && Math.random() < skipRate
 

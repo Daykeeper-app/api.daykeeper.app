@@ -6,6 +6,7 @@ const {
   success: { fetched },
 } = require("../../../constants/index")
 const hideUserData = require("../../repositories/hideProject/hideUserData")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 const getCommentById = async (props) => {
   const { commentId, loggedUser } = props
@@ -47,7 +48,7 @@ const getCommentById = async (props) => {
     },
   ])
 
-  return fetched("Comment", { data: commentData?.[0] || null })
+  return fetched("Comment", { data: serializeMediaPayload(commentData?.[0] || null) })
 }
 
 module.exports = getCommentById

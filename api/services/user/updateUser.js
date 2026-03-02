@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs")
 const crypto = require("crypto")
 const deleteFile = require("../../utils/deleteFile")
 const { sendVerificationEmail } = require("../../utils/emailHandler")
+const { buildMediaUrlFromKey } = require("../../utils/cloudfrontMedia")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 const {
   errors: { notFound },
@@ -119,10 +121,11 @@ const updateUser = async (params) => {
   if (timeZoneChanged) set.timeZone = timeZone
 
   if (file) {
+    const profilePictureUrl = buildMediaUrlFromKey(file.key)
     set.profile_picture = {
       title: file.originalname,
       key: file.key,
-      url: file.url,
+      url: profilePictureUrl || file.url || "",
     }
   }
 
@@ -168,7 +171,10 @@ const updateUser = async (params) => {
 
   // Best-effort email verification send
   if (emailChanged) {
-    const pfpUrl = updatedUser.profile_picture?.url || defaultPfp?.url
+    const pfpUrl =
+      buildMediaUrlFromKey(updatedUser.profile_picture?.key) ||
+      updatedUser.profile_picture?.url ||
+      defaultPfp?.url
     const friendlyName = updatedUser.displayName || updatedUser.username
     sendVerificationEmail(
       friendlyName,
@@ -178,7 +184,7 @@ const updateUser = async (params) => {
     ).catch(() => null)
   }
 
-  return updated("user", { user: updatedUser })
+  return updated("user", { user: serializeMediaPayload(updatedUser.toObject()) })
 }
 
 module.exports = updateUser

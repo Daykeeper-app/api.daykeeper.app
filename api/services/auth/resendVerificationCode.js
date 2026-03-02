@@ -4,6 +4,7 @@ const {
   sendVerificationEmail,
   sendPasswordResetEmail,
 } = require("../../utils/emailHandler")
+const { buildMediaUrlFromKey } = require("../../utils/cloudfrontMedia")
 
 const {
   errors: { notFound, fieldNotFilledIn, unauthorized },
@@ -59,7 +60,11 @@ const resendCode = async (props, type = "verify") => {
       }
     )
 
-    const pfpUrl = user.profile_picture?.url || defaultPfp?.url || undefined
+    const pfpUrl =
+      buildMediaUrlFromKey(user.profile_picture?.key) ||
+      user.profile_picture?.url ||
+      defaultPfp?.url ||
+      undefined
     sendVerificationEmail(user.username, user.email, pfpUrl, code).catch(
       () => null
     )

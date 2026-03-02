@@ -1,4 +1,5 @@
 const User = require("../../models/User")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 module.exports = async function getUserData({ userId }) {
   const user = await User.findById(userId).select(
@@ -9,5 +10,9 @@ module.exports = async function getUserData({ userId }) {
     return { code: 404, message: "User not found", user: null }
   }
 
-  return { code: 200, message: "User data", user }
+  return {
+    code: 200,
+    message: "User data",
+    user: serializeMediaPayload(user.toObject()),
+  }
 }

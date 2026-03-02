@@ -8,6 +8,31 @@ const {
   aws: { bucketName, storageType },
 } = require("../../config")
 
+function sanitizeSegment(value, fallback = "file") {
+  const sanitized = String(value || fallback)
+    .normalize("NFKD")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase()
+  return sanitized || fallback
+}
+
+function getUploadPrefix(req, fileType) {
+  const userId = req?.user?._id ? String(req.user._id) : "anonymous"
+  const baseUrl = String(req?.baseUrl || "")
+
+  if (baseUrl.includes("/post")) {
+    return `raw/users/${sanitizeSegment(userId)}/posts/${fileType}`
+  }
+
+  if (baseUrl.includes("/user")) {
+    return `public/users/${sanitizeSegment(userId)}/profile/${fileType}`
+  }
+
+  return `raw/uploads/${fileType}`
+}
+
 // Ensure local upload dir exists (for local use)
 const uploadDir = path.resolve(__dirname, "..", "tmp", "uploads")
 if (!fs.existsSync(uploadDir)) {
@@ -32,7 +57,6 @@ const storageTypes = {
   s3: multerS3({
     s3: awsS3Config,
     bucket: bucketName,
-    acl: "public-read", // Public file access via URL
     contentType: (req, file, cb) => {
       const mime = file.mimetype
       if (mime.startsWith("image/") || mime.startsWith("video/")) {
@@ -44,7 +68,10 @@ const storageTypes = {
     key: (req, file, cb) => {
       crypto.randomBytes(16, (err, hash) => {
         if (err) return cb(err)
-        const fileName = `${hash.toString("hex")}-${file.originalname}`
+        const fileType = file.mimetype.startsWith("video") ? "videos" : "images"
+        const safeName = sanitizeSegment(file.originalname, "upload")
+        const prefix = getUploadPrefix(req, fileType)
+        const fileName = `${prefix}/${hash.toString("hex")}-${safeName}`
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileName}`
         file.url = fileUrl
         cb(null, fileName)

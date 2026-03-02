@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/cloudfront-signer": "^3.999.0",
     "aws-sdk": "^2.1646.0",
     "axios": "^1.7.2",
     "bcryptjs": "^3.0.2",

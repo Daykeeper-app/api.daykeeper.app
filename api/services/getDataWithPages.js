@@ -1,4 +1,5 @@
 const { Types } = require("mongoose")
+const { serializeMediaPayload } = require("../utils/serializeMediaPayload")
 
 const { maxPageSize: DEFAULT_MAX_PAGE_SIZE } = require("../../constants/index")
 
@@ -179,7 +180,7 @@ const getDataWithPages = async (
 
     const result = await Model.aggregate(aggregationPipeline)
     const row = result?.[0] || {}
-    const data = row.data || []
+    const data = serializeMediaPayload(row.data || [])
     const totalCount = row.totalCount || 0
 
     const totalPages = totalCount ? Math.ceil(totalCount / size) : 0

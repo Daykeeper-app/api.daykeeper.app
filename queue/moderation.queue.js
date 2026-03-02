@@ -5,6 +5,15 @@ const {
   redis: { url: redisUrl },
 } = require("../config")
 
+const parseBool = (value, fallback) => {
+  if (value === undefined || value === null || value === "") return fallback
+  const normalized = String(value).trim().toLowerCase()
+  if (["true", "1", "yes", "on"].includes(normalized)) return true
+  if (["false", "0", "no", "off"].includes(normalized)) return false
+  return fallback
+}
+const verboseQueueLogs = parseBool(process.env.MODERATION_QUEUE_VERBOSE_LOGS, false)
+
 const connection = new IORedis(redisUrl)
 const parsedAttempts = Number(process.env.MODERATION_JOB_ATTEMPTS)
 const moderationJobAttempts = Number.isInteger(parsedAttempts)
@@ -26,8 +35,10 @@ function enqueueModeration({ mediaId, key, type, uploadedBy }) {
   )
 }
 
-connection.on("ready", () => {
-  console.log(`\x1b[36mRedis connected successfully\x1b[0m`)
-})
+if (verboseQueueLogs) {
+  connection.on("ready", () => {
+    console.log(`\x1b[36mRedis connected successfully\x1b[0m`)
+  })
+}
 
 module.exports = { enqueueModeration, moderationQueue }

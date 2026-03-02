@@ -7,6 +7,7 @@ const Media = require("../api/models/Media")
 const Post = require("../api/models/Post")
 const generateVideoThumbnails = require("../api/utils/generateVideoThumbnails")
 const { createNotification } = require("../api/services/notification/createNotification")
+const { ensureSinglePostMediaPrivacy } = require("../api/utils/postMediaPrivacy")
 
 /* Imports and Config */
 const { inappropriateLabels } = require("../constants/index")
@@ -18,10 +19,21 @@ const {
 AWS.config.update({ accessKeyId, secretAccessKey, region: defaultRegion })
 const rekognition = new AWS.Rekognition()
 const s3 = new AWS.S3()
+const parseBool = (value, fallback) => {
+  if (value === undefined || value === null || value === "") return fallback
+  const normalized = String(value).trim().toLowerCase()
+  if (["true", "1", "yes", "on"].includes(normalized)) return true
+  if (["false", "0", "no", "off"].includes(normalized)) return false
+  return fallback
+}
 const parseBoundedInt = (value, fallback, min, max) => {
   const parsed = Number(value)
   if (!Number.isInteger(parsed)) return fallback
   return Math.min(max, Math.max(min, parsed))
+}
+const verboseWorkerLogs = parseBool(process.env.MODERATION_WORKER_VERBOSE_LOGS, false)
+const debugLog = (...args) => {
+  if (verboseWorkerLogs) console.log(...args)
 }
 const workerConcurrency = parseBoundedInt(
   process.env.MODERATION_WORKER_CONCURRENCY,
@@ -46,11 +58,11 @@ const connection = new IORedis(redisUrl, {
 })
 
 connection.on("connect", () => {
-  console.log("[worker] Redis connect")
+  debugLog("[worker] Redis connect")
 })
 
 connection.on("ready", () => {
-  console.log("[worker] Redis ready")
+  debugLog("[worker] Redis ready")
 })
 
 connection.on("error", (err) => {
@@ -60,7 +72,7 @@ connection.on("error", (err) => {
 const updateMedia = async (mediaId, isSafe) => {
   try {
     const newStatus = isSafe ? "public" : "rejected"
-    console.log(`media ${mediaId} is ${newStatus}`)
+    debugLog(`media ${mediaId} is ${newStatus}`)
 
     const media = await Media.findByIdAndUpdate(
       mediaId,
@@ -73,7 +85,13 @@ const updateMedia = async (mediaId, isSafe) => {
     if (!media) return { media: null, newStatus }
 
     if (media?.usedIn?.model == "Post") {
-      const post = await Post.findById(media?.usedIn?.refId).select("media")
+      const post = await Post.findById(media?.usedIn?.refId).select(
+        "_id user privacy media",
+      )
+      if (isSafe && post) {
+        await ensureSinglePostMediaPrivacy({ media, post })
+      }
+
       if (post?.media?.length) {
         const medias = await Media.find({ _id: { $in: post.media } }).select(
           "status"
@@ -89,7 +107,7 @@ const updateMedia = async (mediaId, isSafe) => {
           ? "public"
           : "pending"
 
-        console.log("[worker] post status recalculated", {
+        debugLog("[worker] post status recalculated", {
           postId: post._id,
           postStatus,
           mediaStatuses: medias.map((m) => m.status),
@@ -193,12 +211,12 @@ const worker = new Worker(
   async (job) => {
     const { key, type, mediaId } = job.data
     const tempDir = path.join(__dirname, "..", "tmp", "thumbs")
-    console.log(`worker iniciado para ${mediaId}`)
-    console.log(`LOG: bucketName: ${bucketName}; key: ${key}`)
-    console.log("[worker] job data", job.data)
+    debugLog(`worker iniciado para ${mediaId}`)
+    debugLog(`LOG: bucketName: ${bucketName}; key: ${key}`)
+    debugLog("[worker] job data", job.data)
 
     if (type === "image") {
-      console.log("TYPE: IMAGEM")
+      debugLog("TYPE: IMAGEM")
       const res = await rekognition
         .detectModerationLabels({
           Image: { S3Object: { Bucket: bucketName, Name: key } },
@@ -220,7 +238,7 @@ const worker = new Worker(
       return
     }
 
-    console.log("TYPE: VIDEO")
+    debugLog("TYPE: VIDEO")
     // Vídeo
     const videoPath = path.join(
       tempDir,
@@ -270,7 +288,7 @@ const worker = new Worker(
 )
 
 worker.on("active", (job) => {
-  console.log("[worker] job active", { id: job.id, data: job.data })
+  debugLog("[worker] job active", { id: job.id, data: job.data })
   notifyModerationStarted(job).catch(() => null)
 })
 
@@ -279,5 +297,5 @@ worker.on("failed", (job, err) => {
 })
 
 worker.on("completed", (job) => {
-  console.log("[worker] job completed", { id: job.id, data: job.data })
+  debugLog("[worker] job completed", { id: job.id, data: job.data })
 })

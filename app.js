@@ -13,7 +13,8 @@ const passportConfig = require("./api/config/passportAuth")
 const rateLimit = require("./middlewares/rateLimit")
 
 const app = express()
-const isProd = process.env.NODE_ENV === "prod"
+const nodeEnv = String(process.env.NODE_ENV || "").toLowerCase()
+const isProd = nodeEnv === "prod" || nodeEnv === "production"
 const parseBool = (value, fallback) => {
   if (value === undefined || value === null || value === "") return fallback
   const normalized = String(value).trim().toLowerCase()
@@ -136,8 +137,10 @@ app.use(passport.session())
 passportConfig(passport)
 
 // --------- Background workers/jobs (optional) ---------
-const startWorkers = parseBool(process.env.WORKER_ENABLED, !isProd)
-const startJobs = parseBool(process.env.JOBS_ENABLED, !isProd)
+// Cost-safe defaults: workers/jobs are disabled unless explicitly enabled.
+// This prevents accidental Redis/cron usage in local/dev environments.
+const startWorkers = parseBool(process.env.WORKER_ENABLED, false)
+const startJobs = parseBool(process.env.JOBS_ENABLED, false)
 
 if (startWorkers) {
   require("./queue/index.js")

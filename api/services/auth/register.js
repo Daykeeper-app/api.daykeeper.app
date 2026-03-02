@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs")
 const crypto = require("crypto")
 const { sendVerificationEmail } = require("../../utils/emailHandler")
 const { createNotification } = require("../notification/createNotification")
+const { buildMediaUrlFromKey } = require("../../utils/cloudfrontMedia")
 
 const {
   user: { defaultPfp, defaultTimeZone },
@@ -73,9 +74,8 @@ const register = async (props) => {
     throw err
   }
 
-  sendVerificationEmail(username, email, img?.url, verificationCode).catch(
-    () => null
-  )
+  const pfpUrl = buildMediaUrlFromKey(img?.key) || img?.url
+  sendVerificationEmail(username, email, pfpUrl, verificationCode).catch(() => null)
 
   createNotification({
     userId: user._id,

@@ -2,15 +2,23 @@ const Post = require("../../models/Post")
 const Media = require("../../models/Media")
 const updateStreak = require("../user/streak/updateStreak")
 const deleteFile = require("../../utils/deleteFile")
+const { ensurePostMediaPrivacy } = require("../../utils/postMediaPrivacy")
 
 const {
   success: { created },
   errors: { serverError },
 } = require("../../../constants/index")
 
+function normalizePostPrivacy(privacy) {
+  if (typeof privacy !== "string") return privacy
+  const normalized = privacy.trim().toLowerCase().replace(/\s+/g, "_")
+  return normalized === "close_friends" ? "close friends" : normalized
+}
+
 const createPost = async (req) => {
   const { data, emotion, privacy } = req.body
   const loggedUser = req.user
+  const normalizedPrivacy = normalizePostPrivacy(privacy)
 
   const mediaDocs = Array.isArray(req.mediaDocs) ? req.mediaDocs : []
 
@@ -40,7 +48,7 @@ const createPost = async (req) => {
       date: new Date(),
       data,
       emotion,
-      privacy,
+      privacy: normalizedPrivacy,
       status: postStatus,
       media: mediaDocs.map((m) => m._id),
       user: loggedUser._id,
@@ -62,6 +70,12 @@ const createPost = async (req) => {
           }),
         ),
       )
+
+      const publicMedias = await Media.find({
+        _id: { $in: mediaDocs.map((m) => m._id) },
+        status: "public",
+      })
+      await ensurePostMediaPrivacy({ post, medias: publicMedias })
     }
 
     // Recalculate post status after media linkage (worker may have finished early)

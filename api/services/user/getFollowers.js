@@ -9,6 +9,7 @@ const {
   errors: { notFound },
   success: { fetched },
 } = require("../../../constants/index")
+const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
 
 const getFollowers = async (props) => {
   const { username, page, maxPageSize, loggedUser } = props
@@ -24,7 +25,9 @@ const getFollowers = async (props) => {
       maxPageSize,
     })
 
-    return fetched(`followers`, { response: { ...response, user } })
+    return fetched(`followers`, {
+      response: { ...response, user: serializeMediaPayload(user) },
+    })
   } catch (error) {
     throw new Error(error.message)
   }
