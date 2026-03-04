@@ -1,6 +1,9 @@
-const mongoose = require("mongoose")
 const DayEvent = require("../../../models/DayEvent")
 const getEventPipeline = require("../../../repositories/pipelines/day/events/getEventPipeline")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../utils/normalizeObjectIdInput")
 
 const {
   errors: { notFound, invalidValue, unauthorized },
@@ -11,11 +14,12 @@ const getEvent = async ({ eventId, loggedUser }) => {
   if (!loggedUser?._id)
     return unauthorized("Unauthorized", "Login required", 401)
 
-  if (!mongoose.Types.ObjectId.isValid(eventId)) return invalidValue("Event ID")
+  const normalizedEventId = normalizeObjectIdInput(eventId)
+  if (!isValidObjectIdInput(normalizedEventId)) return invalidValue("Event ID")
 
   try {
     const event = await DayEvent.aggregate(
-      getEventPipeline(eventId, loggedUser)
+      getEventPipeline(normalizedEventId, loggedUser)
     )
 
     if (!event || event.length === 0) return notFound("Event")

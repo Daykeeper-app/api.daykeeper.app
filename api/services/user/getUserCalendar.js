@@ -14,12 +14,19 @@ function parseDays(input) {
   if (!Number.isFinite(parsed)) return 365
   const int = Math.trunc(parsed)
   if (int < 7) return 7
-  if (int > 730) return 730
+  if (int > 3650) return 3650
   return int
 }
 
 function parseEndDate(input) {
   if (!input) return new Date()
+  const date = new Date(input)
+  if (!Number.isFinite(date.getTime())) return null
+  return date
+}
+
+function parseStartDate(input) {
+  if (!input) return null
   const date = new Date(input)
   if (!Number.isFinite(date.getTime())) return null
   return date
@@ -94,7 +101,8 @@ async function aggregateDailyCounts({
 }
 
 const getUserCalendar = async (props) => {
-  const { username, loggedUser, days, endDate, fetchedUser } = props
+  const { username, loggedUser, days, endDate, startDate, scope, fetchedUser } =
+    props
 
   const targetUser =
     fetchedUser || (await findUser({ userInput: username, hideData: false }))
@@ -102,11 +110,31 @@ const getUserCalendar = async (props) => {
 
   const parsedEndDate = parseEndDate(endDate)
   if (!parsedEndDate) return invalidValue("endDate")
+  const parsedStartDate = parseStartDate(startDate)
+  if (startDate && !parsedStartDate) return invalidValue("startDate")
 
-  const rangeDays = parseDays(days)
   const end = new Date(parsedEndDate)
-  const start = new Date(end)
-  start.setUTCDate(start.getUTCDate() - (rangeDays - 1))
+  let start
+  let rangeDays
+
+  if (String(scope || "").trim().toLowerCase() === "all") {
+    start = new Date(targetUser.created_at || targetUser._id?.getTimestamp?.() || end)
+    rangeDays = Math.max(
+      1,
+      Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
+    )
+  } else if (parsedStartDate) {
+    start = new Date(parsedStartDate)
+    if (start > end) return invalidValue("startDate")
+    rangeDays = Math.max(
+      1,
+      Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
+    )
+  } else {
+    rangeDays = parseDays(days)
+    start = new Date(end)
+    start.setUTCDate(start.getUTCDate() - (rangeDays - 1))
+  }
 
   const isOwner = String(targetUser._id) === String(loggedUser._id)
   const isCloseFriend = isOwner
@@ -168,6 +196,11 @@ const getUserCalendar = async (props) => {
       postsCount,
       tasksCount,
       eventsCount,
+      interactions: [
+        { type: "post", count: postsCount },
+        { type: "task", count: tasksCount },
+        { type: "event", count: eventsCount },
+      ],
     })
 
     cursor.setUTCDate(cursor.getUTCDate() + 1)
@@ -193,6 +226,16 @@ const getUserCalendar = async (props) => {
       days: rangeDays,
       from: withLevel[0]?.date || null,
       to: withLevel[withLevel.length - 1]?.date || null,
+      range: {
+        scope:
+          String(scope || "").trim().toLowerCase() === "all"
+            ? "all"
+            : parsedStartDate
+            ? "custom"
+            : "rolling",
+        startDate: withLevel[0]?.date || null,
+        endDate: withLevel[withLevel.length - 1]?.date || null,
+      },
       totalCount: total,
       maxCount,
       points: withLevel,

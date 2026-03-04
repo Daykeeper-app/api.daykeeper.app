@@ -1,6 +1,9 @@
-const mongoose = require("mongoose")
 const DayTask = require("../../../models/DayTask")
 const { parseISO, isValid } = require("date-fns")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../utils/normalizeObjectIdInput")
 
 const {
   errors: { invalidValue, notFound, unauthorized },
@@ -11,10 +14,15 @@ const ALLOWED_PRIVACY = ["public", "private", "close friends"]
 
 const editTask = async (props) => {
   const { taskId, completed, title, date, privacy, loggedUser } = props || {}
+  const normalizedTaskId = normalizeObjectIdInput(taskId)
+
+  if (!isValidObjectIdInput(normalizedTaskId)) {
+    return invalidValue("Task ID")
+  }
 
   try {
     const existing = await DayTask.findOne({
-      _id: taskId,
+      _id: normalizedTaskId,
       user: loggedUser._id,
     })
     if (!existing) return notFound("Task")
@@ -70,7 +78,7 @@ const editTask = async (props) => {
 
     // Apply update
     const doc = await DayTask.findOneAndUpdate(
-      { _id: taskId, user: loggedUser._id },
+      { _id: normalizedTaskId, user: loggedUser._id },
       { $set: updateData },
       { new: true, runValidators: true }
     )

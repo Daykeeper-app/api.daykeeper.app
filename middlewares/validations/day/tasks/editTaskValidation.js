@@ -1,6 +1,9 @@
 const getTask = require("../../../../api/services/day/tasks/getTask")
-const mongoose = require("mongoose")
 const { isValid } = require("date-fns")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../../api/utils/normalizeObjectIdInput")
 
 const {
   day: {
@@ -27,9 +30,11 @@ const editTaskValidation = async (req, res, next) => {
       : undefined
 
   // TaskId validation
-  if (!mongoose.Types.ObjectId.isValid(taskId)) {
+  const normalizedTaskId = normalizeObjectIdInput(taskId)
+  if (!isValidObjectIdInput(normalizedTaskId)) {
     return res.status(400).json({ message: "The Task ID is Invalid" })
   }
+  req.params.taskId = normalizedTaskId
 
   // Title validation (optional)
   if (Object.prototype.hasOwnProperty.call(req.body, "title")) {
@@ -57,7 +62,7 @@ const editTaskValidation = async (req, res, next) => {
   }
 
   try {
-    const taskRes = await getTask({ taskId, loggedUser: req.user })
+    const taskRes = await getTask({ taskId: normalizedTaskId, loggedUser: req.user })
     if (taskRes?.code != 200) {
       return res.status(404).json({ message: "Task not Found" })
     }

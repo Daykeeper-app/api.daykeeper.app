@@ -28,13 +28,13 @@ const createEventController = async (req, res) => {
 }
 const editEventController = async (req, res) => {
   try {
-    const { code, message, event } = await editEvent({
+    const { code, message, event, data } = await editEvent({
       ...req.params,
       ...req.body,
       loggedUser: req.user,
     })
 
-    return res.status(code).json({ message, event })
+    return res.status(code).json({ message, event: event || data })
   } catch (error) {
     return res.status(500).json({ error })
   }
@@ -104,13 +104,13 @@ const createTaskController = async (req, res) => {
 }
 const editTaskController = async (req, res) => {
   try {
-    const { code, message, task } = await editTask({
+    const { code, message, task, data } = await editTask({
       ...req.params,
       ...req.body,
       loggedUser: req.user,
     })
 
-    return res.status(code).json({ message, task })
+    return res.status(code).json({ message, task: task || data })
   } catch (error) {
     return res.status(500).json({ error })
   }

@@ -1,6 +1,8 @@
-const mongoose = require("mongoose")
-
 const deleteTaskDoc = require("./delete/deleteTasks")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../utils/normalizeObjectIdInput")
 
 const {
   errors: { notFound, invalidValue },
@@ -9,12 +11,13 @@ const {
 
 const deleteTask = async (props) => {
   const { taskId } = props || {}
+  const normalizedTaskId = normalizeObjectIdInput(taskId)
 
-  if (!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+  if (!isValidObjectIdInput(normalizedTaskId)) {
     return invalidValue("Task ID")
   }
 
-  const changed = await deleteTaskDoc(taskId)
+  const changed = await deleteTaskDoc(normalizedTaskId)
 
   if (!changed) return notFound("Task")
 

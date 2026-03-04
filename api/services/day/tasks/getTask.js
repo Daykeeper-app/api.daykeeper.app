@@ -1,6 +1,9 @@
-const mongoose = require("mongoose")
 const DayTask = require("../../../models/DayTask")
 const getTaskPipeline = require("../../../repositories/pipelines/day/tasks/getTaskPipeline")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../utils/normalizeObjectIdInput")
 
 const {
   errors: { invalidValue, notFound, unauthorized },
@@ -12,12 +15,13 @@ const getTask = async ({ taskId, loggedUser }) => {
     return unauthorized("Unauthorized", "Login required", 401)
   }
 
-  if (!mongoose.Types.ObjectId.isValid(taskId)) {
+  const normalizedTaskId = normalizeObjectIdInput(taskId)
+  if (!isValidObjectIdInput(normalizedTaskId)) {
     return invalidValue("Task ID")
   }
 
   try {
-    const task = await DayTask.aggregate(getTaskPipeline(taskId, loggedUser))
+    const task = await DayTask.aggregate(getTaskPipeline(normalizedTaskId, loggedUser))
     if (!task || task.length === 0) return notFound("Task")
 
     return fetched("task", { data: task[0] })

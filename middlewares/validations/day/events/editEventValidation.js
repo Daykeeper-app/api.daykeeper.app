@@ -1,5 +1,9 @@
 const { isValid, isBefore } = require("date-fns")
 const getEvent = require("../../../../api/services/day/events/getEvent")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../../api/utils/normalizeObjectIdInput")
 
 const {
   day: {
@@ -9,13 +13,17 @@ const {
 
 const createEvent = async (req, res, next) => {
   const {
-    eventId,
-
     title,
     description,
     privacy,
     placeId,
   } = req.body
+  const rawEventId = req.params?.eventId
+  const normalizedEventId = normalizeObjectIdInput(rawEventId)
+  if (!isValidObjectIdInput(normalizedEventId)) {
+    return res.status(400).json({ message: "The Event ID is Invalid" })
+  }
+  req.params.eventId = normalizedEventId
 
   // Validations
   if (description && description?.length > maxEventDescriptionLength)
@@ -46,8 +54,9 @@ const createEvent = async (req, res, next) => {
     }
 
   try {
-    const event = await getEvent({ eventId, loggedUser: req.user })
-    if (!event) return res.status(404).json({ message: "Event not Found" })
+    const event = await getEvent({ eventId: normalizedEventId, loggedUser: req.user })
+    if (event?.code !== 200)
+      return res.status(event?.code || 404).json({ message: "Event not Found" })
 
     if (placeId) {
       const placeById = await getPlaceById({ placeId })

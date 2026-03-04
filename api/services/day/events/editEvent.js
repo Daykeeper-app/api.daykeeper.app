@@ -1,5 +1,8 @@
-const mongoose = require("mongoose")
 const DayEvent = require("../../../models/DayEvent")
+const {
+  normalizeObjectIdInput,
+  isValidObjectIdInput,
+} = require("../../../utils/normalizeObjectIdInput")
 
 const {
   errors: { invalidValue, notFound, unauthorized },
@@ -21,7 +24,8 @@ const editEvent = async (props) => {
     return unauthorized("Unauthorized", "Login required", 401)
   }
 
-  if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
+  const normalizedEventId = normalizeObjectIdInput(eventId)
+  if (!isValidObjectIdInput(normalizedEventId)) {
     return invalidValue("Event ID")
   }
 
@@ -44,7 +48,7 @@ const editEvent = async (props) => {
     }
 
     const doc = await DayEvent.findOneAndUpdate(
-      { _id: eventId, user: loggedUser._id },
+      { _id: normalizedEventId, user: loggedUser._id },
       { $set: updateData },
       {
         new: true,

@@ -94,6 +94,8 @@ const getUserCalendarController = async (req, res) => {
       username,
       days: req.query?.days,
       endDate: req.query?.endDate,
+      startDate: req.query?.startDate,
+      scope: req.query?.scope,
       loggedUser: req.user,
       fetchedUser: req.fetchedUser,
     })
