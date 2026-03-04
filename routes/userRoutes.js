@@ -4,6 +4,7 @@ const {
   getUser,
   getUserPosts,
   getUserPostsByDay,
+  getUserCalendar,
   updateUser,
   reseteProfilePicture,
   deleteUser,
@@ -88,6 +89,7 @@ router.post("/:username/report", checkTokenMW, checkBannedUserMW, reportUser)
 // posts
 router.get("/:username/posts", checkTokenMW, checkValidUserMW, getUserPosts)
 router.get("/:username/posts/:date", checkTokenMW, getUserPostsByDay)
+router.get("/:username/calendar", checkTokenMW, checkValidUserMW, getUserCalendar)
 
 // GET USER
 router.get("/:username", checkTokenMW, getUser)

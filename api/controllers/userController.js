@@ -13,6 +13,7 @@ const removeFollower = require("../services/user/removeFollower")
 const blockUser = require("../services/user/blockUser")
 const getBlockedUsers = require("../services/user/getBlockedUsers")
 const reportUser = require("../services/user/reportUser")
+const getUserCalendar = require("../services/user/getUserCalendar")
 const getFollowing = require("../services/user/getFollowing")
 const getFollowers = require("../services/user/getFollowers")
 const getFollowRequests = require("../services/user/getFollowRequests")
@@ -81,6 +82,24 @@ const getUserPostsByDayController = async (req, res) => {
     return res.status(code).json({ message, ...props })
   } catch (error) {
     console.log(error)
+    return res.status(500).json({ message: serverError(String(error)) })
+  }
+}
+
+const getUserCalendarController = async (req, res) => {
+  const { username } = req.params
+
+  try {
+    const { code, message, data } = await getUserCalendar({
+      username,
+      days: req.query?.days,
+      endDate: req.query?.endDate,
+      loggedUser: req.user,
+      fetchedUser: req.fetchedUser,
+    })
+
+    return res.status(code).json({ message, data })
+  } catch (error) {
     return res.status(500).json({ message: serverError(String(error)) })
   }
 }
@@ -333,6 +352,7 @@ module.exports = {
   getUser: getUserController,
   getUserPosts: getUserPostsController,
   getUserPostsByDay: getUserPostsByDayController,
+  getUserCalendar: getUserCalendarController,
   updateUser: updateUserController,
   reseteProfilePicture: reseteProfilePictureController,
   deleteUser: deleteUserController,
