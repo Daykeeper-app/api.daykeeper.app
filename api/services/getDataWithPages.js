@@ -26,7 +26,6 @@ const MODEL_BY_TYPE = {
   CommentLikes: require("../models/CommentLikes"),
   Report: require("../models/Report"),
   BanHistory: require("../models/BanHistory"),
-  Note: require("../models/DayNote"),
   Task: require("../models/DayTask"),
   Event: require("../models/DayEvent"),
   Notification: require("../models/Notification"),

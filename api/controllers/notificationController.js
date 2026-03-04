@@ -5,6 +5,14 @@ const {
 const getNotifications = require("../services/notification/getNotifications")
 const markNotificationsRead = require("../services/notification/markNotificationsRead")
 
+const parseBoolean = (value) => {
+  if (typeof value === "boolean") return value
+  if (typeof value !== "string") return false
+
+  const normalized = value.trim().toLowerCase()
+  return ["true", "1", "yes", "on"].includes(normalized)
+}
+
 const getNotificationsController = async (req, res) => {
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
@@ -30,13 +38,16 @@ const getNotificationsController = async (req, res) => {
 
 const markNotificationsReadController = async (req, res) => {
   try {
-    const { code, message, matched, modified } = await markNotificationsRead({
+    const { code, message, matched, modified, unreadCount, hasUnread } =
+      await markNotificationsRead({
       loggedUser: req.user,
       ids: req.body?.ids,
-      all: Boolean(req.body?.all),
+      all: parseBoolean(req.body?.all),
     })
 
-    return res.status(code).json({ message, matched, modified })
+    return res
+      .status(code)
+      .json({ message, matched, modified, unreadCount, hasUnread })
   } catch (error) {
     return res.status(500).json({ message: serverError(String(error)) })
   }

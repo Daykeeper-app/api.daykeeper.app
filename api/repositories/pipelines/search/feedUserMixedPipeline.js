@@ -348,45 +348,6 @@ const feedUserMixedPipeline = (
       },
     },
 
-    // notes list
-    {
-      $lookup: {
-        from: "dayNote",
-        let: {
-          uid: "$_id",
-          dayStart: "$dayStart",
-          dayEnd: "$dayEnd",
-          viewerId: mainUserId,
-          isCloseFriend: "$isCloseFriend",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$user", "$$uid"] },
-                  { $gte: ["$date", "$$dayStart"] },
-                  { $lt: ["$date", "$$dayEnd"] },
-                ],
-              },
-            },
-          },
-          { $match: { $expr: visibilityExpr } },
-          {
-            $project: {
-              _id: 1,
-              text: 1,
-              privacy: 1,
-              user: 1,
-              date: 1,
-              created_at: 1,
-            },
-          },
-        ],
-        as: "note_items",
-      },
-    },
-
     // tasks list
     {
       $lookup: {
@@ -514,7 +475,6 @@ const feedUserMixedPipeline = (
     {
       $addFields: {
         postsCount: { $size: "$posts" },
-        notesCount: { $size: "$note_items" },
         tasksCount: { $size: "$task_items" },
         eventsCount: { $size: "$event_items" },
       },
@@ -525,7 +485,7 @@ const feedUserMixedPipeline = (
       $match: {
         $expr: {
           $gt: [
-            { $add: ["$postsCount", "$notesCount", "$tasksCount", "$eventsCount"] },
+            { $add: ["$postsCount", "$tasksCount", "$eventsCount"] },
             0,
           ],
         },
@@ -542,13 +502,6 @@ const feedUserMixedPipeline = (
                 input: "$posts",
                 as: "p",
                 in: { type: "post", sortDate: "$$p.date", item: "$$p" },
-              },
-            },
-            {
-              $map: {
-                input: "$note_items",
-                as: "n",
-                in: { type: "note", sortDate: "$$n.date", item: "$$n" },
               },
             },
             {
@@ -633,7 +586,6 @@ const feedUserMixedPipeline = (
         isFollowing: 1,
         isCloseFriend: 1,
         postsCount: 1,
-        notesCount: 1,
         tasksCount: 1,
         eventsCount: 1,
         lastPostTime: 1,
@@ -672,7 +624,6 @@ const feedUserMixedPipeline = (
                 },
               },
               relevance: "$$m.item.relevance",
-              text: "$$m.item.text",
               title: "$$m.item.title",
               completed: { $ifNull: ["$$m.item.completed", false] },
               description: "$$m.item.description",

@@ -1,6 +1,5 @@
 const CloseFriends = require("../api/models/CloseFriends")
 const DayEvent = require("../api/models/DayEvent")
-const DayNote = require("../api/models/DayNote")
 const DayTask = require("../api/models/DayTask")
 
 const {
@@ -9,7 +8,7 @@ const {
 
 function checkElementPrivacy(elementType) {
   return async (req, res, next) => {
-    const { eventId, noteId, taskId } = req.params
+    const { eventId, taskId } = req.params
     const loggedUser = req.user
 
     try {
@@ -17,8 +16,6 @@ function checkElementPrivacy(elementType) {
         switch (elementType) {
           case "event":
             return DayEvent.findById(eventId)
-          case "note":
-            return DayNote.findById(noteId)
           case "task":
             return DayTask.findById(taskId)
           default:

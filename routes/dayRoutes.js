@@ -7,12 +7,6 @@ const {
   getEvent,
   getEventByDate,
 
-  createNote,
-  editNote,
-  deleteNote,
-  getNote,
-  getNotesByDate,
-
   createTask,
   editTask,
   deleteTask,
@@ -25,8 +19,6 @@ const {
 const checkTokenMW = require("../middlewares/checkTokenMW")
 const createEventValidation = require("../middlewares/validations/day/events/createEventValidation")
 const editEventValidation = require("../middlewares/validations/day/events/editEventValidation")
-const createNoteValidation = require("../middlewares/validations/day/notes/createNoteValidation")
-const editNoteValidation = require("../middlewares/validations/day/notes/editNoteValidation")
 const createTaskValidation = require("../middlewares/validations/day/tasks/createTaskValidation")
 const editTaskValidation = require("../middlewares/validations/day/tasks/editTaskValidation")
 
@@ -36,13 +28,6 @@ router.put("/event/:eventId", checkTokenMW, editEventValidation, editEvent)
 router.delete("/event/:eventId", checkTokenMW, deleteEvent)
 router.get("/event/:eventId", checkTokenMW, getEvent)
 router.get("/event/:username/:date", checkTokenMW, getEventByDate)
-
-// Note Router
-router.post("/note", checkTokenMW, createNoteValidation, createNote)
-router.put("/note/:noteId", checkTokenMW, editNoteValidation, editNote)
-router.delete("/note/:noteId", checkTokenMW, deleteNote)
-router.get("/note/:noteId", checkTokenMW, getNote)
-router.get("/note/:username/:date", checkTokenMW, getNotesByDate)
 
 // Task Router
 router.post("/task", checkTokenMW, createTaskValidation, createTask)

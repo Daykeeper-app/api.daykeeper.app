@@ -1,5 +1,6 @@
 const Post = require("../../models/Post")
 const Media = require("../../models/Media")
+const User = require("../../models/User")
 const axios = require("axios")
 const https = require("https")
 const AWS = require("aws-sdk")
@@ -23,7 +24,7 @@ AWS.config.update({
 
 const rekognition = new AWS.Rekognition()
 
-const handleRekognition = async (req, res) => {
+const handleRekognition = async (req) => {
   try {
     const type = req.headers["x-amz-sns-message-type"]
 
@@ -71,7 +72,7 @@ const handleRekognition = async (req, res) => {
       await media.save()
 
       if (media.status == "rejected") {
-        const user = await user.findOne({ _id: media.uploadedBy })
+        const user = await User.findOne({ _id: media.uploadedBy })
 
         if (user && !user?.banned)
           await banOrUnbanUser({
@@ -110,7 +111,7 @@ const handleRekognition = async (req, res) => {
     return { code: 200, message: "No-op" }
   } catch (error) {
     console.error(error)
-    return res.status(500).json("Webhook Error, please contact an admin")
+    return { code: 500, message: "Webhook Error, please contact an admin" }
   }
 }
 

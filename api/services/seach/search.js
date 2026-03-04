@@ -4,7 +4,6 @@ const {
   searchPostPipeline,
   searchUserPipeline,
   searchEventPipeline,
-  searchNotePipeline,
   searchTaskPipeline,
 } = require("../../repositories")
 
@@ -24,8 +23,7 @@ const search = async (props) => {
   const order = props.order || "relevant"
   const following = props.following
   let type = props?.type
-  if (type != "User" && type != "Event" && type != "Note" && type != "Task")
-    type == "Post"
+  if (type !== "User" && type !== "Event" && type !== "Task") type = "Post"
 
   const loggedUser = props.user
 
@@ -45,7 +43,7 @@ const search = async (props) => {
         filterPipe = { dateStart: { $lte: now }, dateEnd: { $gte: now } }
     }
 
-    if (type === "Note" || type === "Task") {
+    if (type === "Task") {
       if (filter === "upcoming") filterPipe = { date: { $gt: now } }
       if (filter === "past") filterPipe = { date: { $lt: now } }
     }
@@ -57,9 +55,7 @@ const search = async (props) => {
         ? searchUserPipeline(searchQuery, loggedUser)
         : type === "Event"
         ? searchEventPipeline(searchQuery, filterPipe, loggedUser)
-        : type === "Task"
-        ? searchTaskPipeline(searchQuery, filterPipe, loggedUser)
-        : searchNotePipeline(searchQuery, filterPipe, loggedUser)
+        : searchTaskPipeline(searchQuery, filterPipe, loggedUser)
 
     const response = await getDataWithPages(
       {

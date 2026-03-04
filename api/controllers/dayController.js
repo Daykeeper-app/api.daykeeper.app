@@ -5,13 +5,6 @@ const deleteEvent = require("../services/day/events/deleteEvent")
 const getEvent = require("../services/day/events/getEvent")
 const getEventByDate = require("../services/day/events/getEventByDate")
 
-// Notes
-const createNote = require("../services/day/notes/createNote")
-const editNote = require("../services/day/notes/editNote")
-const deleteNote = require("../services/day/notes/deleteNote")
-const getNote = require("../services/day/notes/getNote")
-const getNotesByDate = require("../services/day/notes/getNotesByDate")
-
 // Tasks
 const createTask = require("../services/day/tasks/createTask")
 const editTask = require("../services/day/tasks/editTask")
@@ -82,82 +75,6 @@ const getEventByDateController = async (req, res) => {
     const { username, date } = req.params
 
     const { code, message, props } = await getEventByDate({
-      username,
-      dateStr: date,
-      order,
-      maxPageSize,
-      page,
-      loggedUser: req.user,
-    })
-
-    return res.status(code).json({ message, ...props })
-  } catch (error) {
-    return res.status(500).json({ error })
-  }
-}
-
-// ========== NOTE CONTROLLERS ==========
-const createNoteController = async (req, res) => {
-  try {
-    const { code, message, note } = await createNote({
-      ...req.body,
-      loggedUser: req.user,
-    })
-
-    return res.status(code).json({ message, note })
-  } catch (error) {
-    return res.status(500).json({ error })
-  }
-}
-const editNoteController = async (req, res) => {
-  try {
-    const { code, message, note } = await editNote({
-      ...req.params,
-      ...req.body,
-      loggedUser: req.user,
-    })
-
-    return res.status(code).json({ message, note })
-  } catch (error) {
-    return res.status(500).json({ error })
-  }
-}
-const deleteNoteController = async (req, res) => {
-  try {
-    const { code, message, note } = await deleteNote({
-      ...req.params,
-      loggedUser: req.user,
-    })
-
-    return res.status(code).json({ message, note })
-  } catch (error) {
-    return res.status(500).json({ error })
-  }
-}
-const getNoteController = async (req, res) => {
-  try {
-    const { code, message, data } = await getNote({
-      ...req.params,
-      loggedUser: req.user,
-    })
-
-    return res.status(code).json({ message, data })
-  } catch (error) {
-    return res.status(500).json({ error })
-  }
-}
-const getNotesByDateController = async (req, res) => {
-  try {
-    const page = Number(req.query.page) || 1
-    const maxPageSize = req.query.maxPageSize
-      ? Number(req.query.maxPageSize) <= 100
-        ? Number(req.query.maxPageSize)
-        : 100
-      : 1
-    const order = req.query.order || "relevant"
-    const { username, date } = req.params
-
-    const { code, message, props } = await getNotesByDate({
       username,
       dateStr: date,
       order,
@@ -277,13 +194,6 @@ module.exports = {
   deleteEvent: deleteEventController,
   getEvent: getEventController,
   getEventByDate: getEventByDateController,
-
-  createNote: createNoteController,
-  editNote: editNoteController,
-  deleteNote: deleteNoteController,
-  getNote: getNoteController,
-  getNotesByDate: getNotesByDateController,
-
   createTask: createTaskController,
   editTask: editTaskController,
   deleteTask: deleteTaskController,

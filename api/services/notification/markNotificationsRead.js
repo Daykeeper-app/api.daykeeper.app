@@ -45,9 +45,16 @@ const markNotificationsRead = async (props) => {
     )
   }
 
+  const unreadCount = await Notification.countDocuments({
+    user: loggedUser._id,
+    read: false,
+  })
+
   return updated("notifications", {
     matched: result.matchedCount ?? result.n,
     modified: result.modifiedCount ?? result.nModified,
+    unreadCount,
+    hasUnread: unreadCount > 0,
   })
 }
 

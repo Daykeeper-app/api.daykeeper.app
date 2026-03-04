@@ -13,7 +13,6 @@ const hardDeleteFollowers = require("../../services/user/delete/hardDeleteFollow
 const hardDeletePosts = require("../../services/user/delete/hardDeletePosts")
 const hardDeleteUser = require("../../services/user/delete/hardDeleteUser")
 const hardDeleteEvents = require("../../services/day/events/delete/hardDeleteEvents")
-const hardDeleteNotes = require("../../services/day/notes/delete/hardDeleteNotes")
 const hardDeleteTasks = require("../../services/day/tasks/delete/hardDeleteTasks")
 
 const hardDeleteReportsByUser = require("../../services/admin/delete/hardDeleteReportsByUser")
@@ -51,7 +50,6 @@ const hardDeleteSoftDeletedUsers = async () => {
           hardDeletePosts(userId),
 
           hardDeleteEvents(userId),
-          hardDeleteNotes(userId),
           hardDeleteTasks(userId),
 
           hardDeleteReportsByUser(userId),

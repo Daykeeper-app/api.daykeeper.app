@@ -1,5 +1,6 @@
 const getDataWithPages = require("../getDataWithPages")
 const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
+const Notification = require("../../models/Notification")
 const {
   errors: { unauthorized },
   success: { fetched },
@@ -27,14 +28,24 @@ const getNotificationRoute = (notification) => {
   }
 }
 
+function parseOptionalBoolean(value) {
+  if (typeof value === "boolean") return value
+  if (typeof value !== "string") return null
+
+  const normalized = value.trim().toLowerCase()
+  if (["true", "1", "yes"].includes(normalized)) return true
+  if (["false", "0", "no"].includes(normalized)) return false
+  return null
+}
+
 const getNotifications = async (props) => {
   const { loggedUser, page, maxPageSize, read } = props
 
   if (!loggedUser?._id) return unauthorized("fetch notifications")
 
   const match = { user: loggedUser._id }
-  if (read === "true") match.read = true
-  if (read === "false") match.read = false
+  const parsedRead = parseOptionalBoolean(read)
+  if (parsedRead !== null) match.read = parsedRead
 
   const response = await getDataWithPages({
     type: "Notification",
@@ -50,7 +61,19 @@ const getNotifications = async (props) => {
     route: getNotificationRoute(notification),
   }))
 
-  return fetched("notifications", { response: { ...response, data } })
+  const unreadCount = await Notification.countDocuments({
+    user: loggedUser._id,
+    read: false,
+  })
+
+  return fetched("notifications", {
+    response: {
+      ...response,
+      data,
+      unreadCount,
+      hasUnread: unreadCount > 0,
+    },
+  })
 }
 
 module.exports = getNotifications

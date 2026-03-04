@@ -202,43 +202,6 @@ const feedPostPipeline = (
       },
     },
 
-    // notes count
-    {
-      $lookup: {
-        from: "dayNote",
-        let: {
-          uid: "$_id",
-          dayStart: "$dayStart",
-          dayEnd: "$dayEnd",
-          viewerId: mainUserId,
-          isCloseFriend: "$isCloseFriend",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$user", "$$uid"] },
-                  { $gte: ["$date", "$$dayStart"] },
-                  { $lt: ["$date", "$$dayEnd"] },
-                ],
-              },
-            },
-          },
-          { $match: { $expr: visibilityExpr } },
-          { $count: "count" },
-        ],
-        as: "note_count",
-      },
-    },
-    {
-      $addFields: {
-        notesCount: {
-          $ifNull: [{ $arrayElemAt: ["$note_count.count", 0] }, 0],
-        },
-      },
-    },
-
     // tasks count
     {
       $lookup: {
@@ -346,45 +309,6 @@ const feedPostPipeline = (
       },
     },
 
-    // notes list
-    {
-      $lookup: {
-        from: "dayNote",
-        let: {
-          uid: "$_id",
-          dayStart: "$dayStart",
-          dayEnd: "$dayEnd",
-          viewerId: mainUserId,
-          isCloseFriend: "$isCloseFriend",
-        },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$user", "$$uid"] },
-                  { $gte: ["$date", "$$dayStart"] },
-                  { $lt: ["$date", "$$dayEnd"] },
-                ],
-              },
-            },
-          },
-          { $match: { $expr: visibilityExpr } },
-          {
-            $project: {
-              _id: 1,
-              text: 1,
-              privacy: 1,
-              user: 1,
-              date: 1,
-              created_at: 1,
-            },
-          },
-        ],
-        as: "note_items",
-      },
-    },
-
     // tasks list
     {
       $lookup: {
@@ -485,17 +409,6 @@ const feedPostPipeline = (
             },
             {
               $map: {
-                input: "$note_items",
-                as: "n",
-                in: {
-                  type: "note",
-                  sortDate: "$$n.date",
-                  item: "$$n",
-                },
-              },
-            },
-            {
-              $map: {
                 input: "$task_items",
                 as: "t",
                 in: {
@@ -532,7 +445,7 @@ const feedPostPipeline = (
     },
 
     {
-      $unset: ["note_count", "task_count", "event_count", "dayStart", "dayEnd"],
+      $unset: ["task_count", "event_count", "dayStart", "dayEnd"],
     },
 
     // final shape
@@ -546,7 +459,6 @@ const feedPostPipeline = (
 
         postsCount: 1,
         lastPostTime: 1,
-        notesCount: 1,
         tasksCount: 1,
         eventsCount: 1,
 
@@ -586,10 +498,6 @@ const feedPostPipeline = (
               },
 
               relevance: "$$m.item.relevance",
-
-              // notes
-              text: "$$m.item.text",
-
               // tasks
               title: "$$m.item.title",
               completed: "$$m.item.completed",

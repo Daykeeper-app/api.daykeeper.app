@@ -22,11 +22,9 @@ const getCommentLikesPipeline = require("./pipelines/post/getCommentLikesPipelin
 const getAveragePostLikesPipeline = require("./pipelines/post/getAveragePostLikesPipeline")
 
 const getEventByDatePipeline = require("./pipelines/day/events/getEventByDatePipeline")
-const getNotesByDatePipeline = require("./pipelines/day/notes/getNotesByDatePipeline")
 const getTasksByDatePipeline = require("./pipelines/day/tasks/getTasksByDatePipeline")
 
 const searchEventPipeline = require("./pipelines/search/searchEventPipeline")
-const searchNotePipeline = require("./pipelines/search/searchNotePipeline")
 const searchTaskPipeline = require("./pipelines/search/searchTaskPipeline")
 const feedPostPipeline = require("./pipelines/search/feedPostPipeline")
 const feedUserMixedPipeline = require("./pipelines/search/feedUserMixedPipeline")
@@ -51,7 +49,6 @@ module.exports = {
   searchPostPipeline,
   searchUserPipeline,
   searchEventPipeline,
-  searchNotePipeline,
   searchTaskPipeline,
 
   // BANS
@@ -61,7 +58,6 @@ module.exports = {
 
   // DAY RELATED
   getEventByDatePipeline,
-  getNotesByDatePipeline,
   getTasksByDatePipeline,
 
   // USER RELATED

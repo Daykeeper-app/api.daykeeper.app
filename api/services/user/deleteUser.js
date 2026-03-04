@@ -13,7 +13,6 @@ const deleteCommentsLikes = require("./delete/deleteCommentsLikes")
 const deleteFollowers = require("./delete/deleteFollowers")
 const deletePosts = require("./delete/deletePosts")
 const deleteEvents = require("../day/events/delete/deleteEvents")
-const deleteNotes = require("../day/notes/delete/deleteNotes")
 const deleteTasks = require("../day/tasks/delete/deleteTasks")
 const deleteUserFromDatabase = require("./delete/deleteUser")
 
@@ -87,7 +86,6 @@ const deleteUser = async (props) => {
       deleteReports(loggedUser._id),
       deleteBanHistory(loggedUser._id),
       deleteEvents(loggedUser._id),
-      deleteNotes(loggedUser._id),
       deleteTasks(loggedUser._id),
     ])
 
