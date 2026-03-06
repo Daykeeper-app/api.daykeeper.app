@@ -75,17 +75,22 @@ function buildMediaUrlFromKey(objectKey, options = {}) {
   if (/^https?:\/\//i.test(trimmed)) return trimmed
 
   const key = normalizeObjectKey(trimmed)
-
   const baseUrl = getCloudFrontBaseUrl()
-  if (!baseUrl) return ""
+  const legacyBase = getLegacyMediaBaseUrl()
 
-  if (isPublicKey(key)) return `${baseUrl}/${key}`
+  if (isPublicKey(key)) {
+    if (baseUrl) return `${baseUrl}/${key}`
+    // Temporary compatibility path: if CloudFront domain is not available
+    // in an environment, allow public assets through legacy base.
+    if (legacyBase) return `${legacyBase}/${key}`
+    return ""
+  }
+
   if (isPrivateKey(key)) {
     return getCloudFrontSignedUrlForPrivateKey(key, options.ttlSeconds)
   }
 
   if (options.allowLegacy === true) {
-    const legacyBase = getLegacyMediaBaseUrl()
     if (legacyBase) return `${legacyBase}/${key}`
   }
 
