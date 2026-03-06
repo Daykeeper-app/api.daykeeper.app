@@ -1,4 +1,5 @@
 const {
+  maxPageSize: DEFAULT_MAX_PAGE_SIZE,
   errors: { serverError },
 } = require("../../constants/index")
 const getPost = require("../services/post/getPost")
@@ -109,10 +110,10 @@ const likePostController = async (req, res) => {
 const getPostLikesController = async (req, res) => {
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
-    ? Number(req.query?.maxPageSize) <= 100
+    ? Number(req.query?.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query?.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getPostLikes({
@@ -147,10 +148,10 @@ const commentPostController = async (req, res) => {
 const getPostCommentsController = async (req, res) => {
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
-    ? Number(req.query?.maxPageSize) <= 100
+    ? Number(req.query?.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query?.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getPostComments({
@@ -184,10 +185,10 @@ const getCommentByIdController = async (req, res) => {
 const getCommentRepliesController = async (req, res) => {
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
-    ? Number(req.query?.maxPageSize) <= 100
+    ? Number(req.query?.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query?.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getCommentReplies({
@@ -236,10 +237,10 @@ const likeCommentController = async (req, res) => {
 const getCommentLikesController = async (req, res) => {
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
-    ? Number(req.query?.maxPageSize) <= 100
+    ? Number(req.query?.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query?.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getCommentLikes({

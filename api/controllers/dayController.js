@@ -1,4 +1,5 @@
 // Events
+const { maxPageSize: DEFAULT_MAX_PAGE_SIZE } = require("../../constants/index")
 const createEvent = require("../services/day/events/createEvent")
 const editEvent = require("../services/day/events/editEvent")
 const deleteEvent = require("../services/day/events/deleteEvent")
@@ -67,10 +68,10 @@ const getEventByDateController = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1
     const maxPageSize = req.query.maxPageSize
-      ? Number(req.query.maxPageSize) <= 100
+      ? Number(req.query.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
         ? Number(req.query.maxPageSize)
-        : 100
-      : 1
+        : DEFAULT_MAX_PAGE_SIZE
+      : DEFAULT_MAX_PAGE_SIZE
     const order = req.query.order || "relevant"
     const { username, date } = req.params
 
@@ -145,7 +146,11 @@ const getDailyTasksController = async (req, res) => {
 
     // sanitize paging
     const page = req.query?.page || 1
-    const maxPageSize = req.query?.maxPageSize || 10
+    const maxPageSize = req.query?.maxPageSize
+      ? Number(req.query.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
+        ? Number(req.query.maxPageSize)
+        : DEFAULT_MAX_PAGE_SIZE
+      : DEFAULT_MAX_PAGE_SIZE
 
     const result = await getDailyTasks({
       username,
@@ -165,10 +170,10 @@ const getTasksByDateController = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1
     const maxPageSize = req.query.maxPageSize
-      ? Number(req.query.maxPageSize) <= 100
+      ? Number(req.query.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
         ? Number(req.query.maxPageSize)
-        : 100
-      : 1
+        : DEFAULT_MAX_PAGE_SIZE
+      : DEFAULT_MAX_PAGE_SIZE
     const order = req.query.order || "relevant"
     const { username, date } = req.params
 

@@ -1,4 +1,5 @@
 const {
+  maxPageSize: DEFAULT_MAX_PAGE_SIZE,
   errors: { serverError },
 } = require("../../constants/index")
 
@@ -30,10 +31,10 @@ const getReportedElementsController = async (req, res) => {
   const entity_type = req.query?.type == "user" ? req.query?.type : "post"
   const page = Number(req.query.page) || 1
   const maxPageSize = req.query.maxPageSize
-    ? Number(req.query.maxPageSize) <= 100
+    ? Number(req.query.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getReportedElements({
@@ -52,10 +53,10 @@ const getBannedElementsController = async (req, res) => {
   const entity_type = req.query?.type == "user" ? req.query?.type : "post"
   const page = Number(req.query.page) || 1
   const maxPageSize = req.query.pageSize
-    ? Number(req.query.pageSize) <= 100
+    ? Number(req.query.pageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query.pageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getBannedElements({
@@ -74,10 +75,10 @@ const getBannedElementsController = async (req, res) => {
 const getElementBanHistoryController = async (req, res) => {
   const page = Number(req.query.page) || 1
   const maxPageSize = req.query.pageSize
-    ? Number(req.query.pageSize) <= 100
+    ? Number(req.query.pageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query.pageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getElementBanHistory({
@@ -97,10 +98,10 @@ const getBanHistoryMadeByAdminController = async (req, res) => {
   const entity_type = req.query?.type == "user" ? req.query?.type : "post"
   const page = Number(req.query?.page) || 1
   const maxPageSize = req.query?.maxPageSize
-    ? Number(req.query?.maxPageSize) <= 100
+    ? Number(req.query?.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(req.query?.maxPageSize)
-      : 100
-    : 1
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   try {
     const { code, message, response } = await getBanHistoryMadeByAdmin({

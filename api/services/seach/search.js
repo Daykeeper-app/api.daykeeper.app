@@ -8,6 +8,7 @@ const {
 } = require("../../repositories")
 
 const {
+  maxPageSize: DEFAULT_MAX_PAGE_SIZE,
   success: { fetched },
 } = require("../../../constants/index")
 
@@ -25,10 +26,10 @@ function normalizeSearchType(input) {
 const search = async (props) => {
   const page = Number(props.page) || 1
   const maxPageSize = props.maxPageSize
-    ? Number(props.maxPageSize) <= 100
+    ? Number(props.maxPageSize) <= DEFAULT_MAX_PAGE_SIZE
       ? Number(props.maxPageSize)
-      : 100
-    : 3
+      : DEFAULT_MAX_PAGE_SIZE
+    : DEFAULT_MAX_PAGE_SIZE
 
   const searchQuery = props.q || ""
   const order = props.order || "relevant"

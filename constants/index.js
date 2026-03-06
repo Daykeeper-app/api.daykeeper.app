@@ -10,7 +10,7 @@ const defaultPfpKey = String(
 const defaultPfpUrl = String(process.env.DEFAULT_PFP_URL || "").trim()
 
 module.exports = {
-  maxPageSize: 5,
+  maxPageSize: 20,
   maxPostsPerUser: 3,
   delete: {
     MediaRetentionDays: 30,
