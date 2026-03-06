@@ -74,7 +74,9 @@ function buildMediaUrlFromKey(objectKey, options = {}) {
     return getCloudFrontSignedUrlForPrivateKey(key, options.ttlSeconds)
   }
 
-  return ""
+  // Backward-compatible fallback for legacy keys that do not have
+  // explicit public/private prefixes (e.g. old profile pictures).
+  return `${baseUrl}/${key}`
 }
 
 module.exports = {

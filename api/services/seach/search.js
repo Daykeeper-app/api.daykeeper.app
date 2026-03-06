@@ -11,6 +11,17 @@ const {
   success: { fetched },
 } = require("../../../constants/index")
 
+function normalizeSearchType(input) {
+  const t = String(input || "")
+    .trim()
+    .toLowerCase()
+
+  if (t === "user" || t === "users") return "User"
+  if (t === "event" || t === "events") return "Event"
+  if (t === "task" || t === "tasks") return "Task"
+  return "Post"
+}
+
 const search = async (props) => {
   const page = Number(props.page) || 1
   const maxPageSize = props.maxPageSize
@@ -22,8 +33,7 @@ const search = async (props) => {
   const searchQuery = props.q || ""
   const order = props.order || "relevant"
   const following = props.following
-  let type = props?.type
-  if (type !== "User" && type !== "Event" && type !== "Task") type = "Post"
+  const type = normalizeSearchType(props?.type)
 
   const loggedUser = props.user
 
@@ -35,7 +45,9 @@ const search = async (props) => {
     // Specific Filters
     const now = new Date()
     let filterPipe = {}
-    const filter = props.filter || ""
+    const filter = String(props.filter || "")
+      .trim()
+      .toLowerCase()
     if (type == "Event") {
       if (filter === "upcoming") filterPipe = { dateStart: { $gt: now } }
       if (filter === "past") filterPipe = { dateStart: { $lt: now } }
