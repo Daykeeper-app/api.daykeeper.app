@@ -4,6 +4,11 @@ const success = require(`./success`)
 const messages = require("./messages")
 const trustScore = require("./trustScore")
 
+const defaultPfpKey = String(
+  process.env.DEFAULT_PFP_KEY || "public/defaults/Doggo.jpg"
+).trim()
+const defaultPfpUrl = String(process.env.DEFAULT_PFP_URL || "").trim()
+
 module.exports = {
   maxPageSize: 5,
   maxPostsPerUser: 3,
@@ -34,8 +39,8 @@ module.exports = {
     ],
     defaultPfp: {
       title: "Doggo.jpg",
-      key: "Doggo.jpg",
-      url: "https://daykeeper.s3.amazonaws.com/Doggo.jpg",
+      key: defaultPfpKey,
+      url: defaultPfpUrl,
       mimetype: "image/jpeg",
     },
     defaultTimeZone: "America/New_York",
