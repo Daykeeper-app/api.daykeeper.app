@@ -16,6 +16,18 @@ function hashCode(code) {
   return crypto.createHash("sha256").update(code).digest("hex")
 }
 
+function toProfilePicturePayload(input = {}) {
+  const title = typeof input.title === "string" ? input.title : ""
+  const key = typeof input.key === "string" ? input.key.trim() : ""
+  const url = typeof input.url === "string" ? input.url.trim() : ""
+  const computed = key ? buildMediaUrlFromKey(key) : ""
+  return {
+    title,
+    key,
+    url: computed ? "" : url,
+  }
+}
+
 const register = async (props) => {
   let { username, email, password, timeZone } = props
 
@@ -30,7 +42,7 @@ const register = async (props) => {
   if (!username) throw new Error("Name is required")
   if (!email) throw new Error("Email is required")
 
-  const img = defaultPfp
+  const img = toProfilePicturePayload(defaultPfp || {})
 
   // 6-digit code
   const verificationCode = Math.floor(

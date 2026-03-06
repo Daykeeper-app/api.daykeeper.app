@@ -42,6 +42,20 @@ function isValidIanaTimeZone(tz) {
   }
 }
 
+function toProfilePicturePayload(input = {}) {
+  const title = typeof input.title === "string" ? input.title : ""
+  const key = typeof input.key === "string" ? input.key.trim() : ""
+  const url = typeof input.url === "string" ? input.url.trim() : ""
+  const computed = key ? buildMediaUrlFromKey(key) : ""
+
+  // Key-first model: when key is mappable to CloudFront, do not persist a static URL.
+  return {
+    title,
+    key,
+    url: computed ? "" : url,
+  }
+}
+
 const updateUser = async (params) => {
   let {
     username,
@@ -121,12 +135,11 @@ const updateUser = async (params) => {
   if (timeZoneChanged) set.timeZone = timeZone
 
   if (file) {
-    const profilePictureUrl = buildMediaUrlFromKey(file.key)
-    set.profile_picture = {
+    set.profile_picture = toProfilePicturePayload({
       title: file.originalname,
       key: file.key,
-      url: profilePictureUrl || file.url || "",
-    }
+      url: file.url || "",
+    })
   }
 
   if (emailChanged) {
