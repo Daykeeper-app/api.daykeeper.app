@@ -3,6 +3,7 @@ const Media = require("../../models/Media")
 const deleteFile = require("../../utils/deleteFile")
 const getPost = require("./getPost")
 const { ensurePostMediaPrivacy } = require("../../utils/postMediaPrivacy")
+const notifyPostMentions = require("./notifyPostMentions")
 
 const deletePostLikes = require("./delete/deletePostLikes")
 const deletePostComments = require("./delete/deletePostComments")
@@ -69,6 +70,7 @@ const updatePost = async (props) => {
     // get REAL mongoose doc so .save works
     const post = await Post.findById(postId)
     if (!post) return notFound("Post")
+    const previousData = typeof post.data === "string" ? post.data : ""
 
     // 2) media currently on post
     const postMediaIds = (post.media || []).map(String)
@@ -127,6 +129,14 @@ const updatePost = async (props) => {
     if (promotedMedia.length) {
       await ensurePostMediaPrivacy({ post, medias: promotedMedia })
     }
+
+    await notifyPostMentions({
+      postId: post._id,
+      actorId: loggedUser._id,
+      actorUsername: loggedUser.username,
+      nextText: post.data,
+      prevText: previousData,
+    })
 
     return updated("post")
   } catch (error) {

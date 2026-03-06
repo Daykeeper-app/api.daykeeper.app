@@ -3,6 +3,7 @@ const Media = require("../../models/Media")
 const updateStreak = require("../user/streak/updateStreak")
 const deleteFile = require("../../utils/deleteFile")
 const { ensurePostMediaPrivacy } = require("../../utils/postMediaPrivacy")
+const notifyPostMentions = require("./notifyPostMentions")
 
 const {
   success: { created },
@@ -109,6 +110,14 @@ const createPost = async (req) => {
       postId: post._id,
       status: postStatus,
       mediaCount: mediaDocs.length,
+    })
+
+    await notifyPostMentions({
+      postId: post._id,
+      actorId: loggedUser._id,
+      actorUsername: loggedUser.username,
+      nextText: post.data,
+      prevText: "",
     })
 
     await updateStreak(loggedUser._id, loggedUser?.timeZone)

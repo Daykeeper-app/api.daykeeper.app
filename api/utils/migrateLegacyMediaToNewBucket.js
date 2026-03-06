@@ -114,6 +114,8 @@ async function runLegacyMediaMigration({
   maxUsers = 1000,
   legacyBucketName = process.env.LEGACY_BUCKET_NAME || "daykeeper",
   clearLegacyUrls = true,
+  includeMedia = true,
+  includeProfiles = true,
 } = {}) {
   const stats = {
     mediaScanned: 0,
@@ -130,155 +132,159 @@ async function runLegacyMediaMigration({
 
   const postCache = new Map()
 
-  const mediaCursor = Media.find(
-    {},
-    { _id: 1, key: 1, url: 1, usedIn: 1, status: 1 }
-  )
-    .limit(Math.max(1, Number(maxMedia) || 1000))
-    .cursor()
+  if (includeMedia) {
+    const mediaCursor = Media.find(
+      {},
+      { _id: 1, key: 1, url: 1, usedIn: 1, status: 1 }
+    )
+      .limit(Math.max(1, Number(maxMedia) || 1000))
+      .cursor()
 
-  for await (const media of mediaCursor) {
-    stats.mediaScanned += 1
+    for await (const media of mediaCursor) {
+      stats.mediaScanned += 1
 
-    const key = normalizeKey(media.key)
-    if (isNewStyleKey(key)) {
-      stats.mediaSkippedNewStyle += 1
-      if (clearLegacyUrls && apply && typeof media.url === "string" && media.url) {
-        await Media.updateOne({ _id: media._id }, { $set: { url: "" } })
-      }
-      continue
-    }
-
-    const parsedFromUrl = parseBucketAndKeyFromUrl(media.url)
-    const sourceKey = parsedFromUrl?.key || key
-    const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
-    if (!sourceKey) continue
-
-    let targetKey = ""
-    if (media.usedIn?.model === "Post" && media.usedIn?.refId) {
-      const postId = String(media.usedIn.refId)
-      let post = postCache.get(postId)
-      if (post === undefined) {
-        post = await Post.findById(postId).select("_id user privacy").lean()
-        postCache.set(postId, post || null)
+      const key = normalizeKey(media.key)
+      if (isNewStyleKey(key)) {
+        stats.mediaSkippedNewStyle += 1
+        if (clearLegacyUrls && apply && typeof media.url === "string" && media.url) {
+          await Media.updateOne({ _id: media._id }, { $set: { url: "" } })
+        }
+        continue
       }
 
-      if (post?._id && post?.user) {
-        const privacyPrefix = getPrivacyPrefix(post.privacy)
-        targetKey = buildTargetMediaKey({
-          currentKey: sourceKey,
-          privacyPrefix,
-          userId: String(post.user),
-          postId: String(post._id),
+      const parsedFromUrl = parseBucketAndKeyFromUrl(media.url)
+      const sourceKey = parsedFromUrl?.key || key
+      const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
+      if (!sourceKey) continue
+
+      let targetKey = ""
+      if (media.usedIn?.model === "Post" && media.usedIn?.refId) {
+        const postId = String(media.usedIn.refId)
+        let post = postCache.get(postId)
+        if (post === undefined) {
+          post = await Post.findById(postId).select("_id user privacy").lean()
+          postCache.set(postId, post || null)
+        }
+
+        if (post?._id && post?.user) {
+          const privacyPrefix = getPrivacyPrefix(post.privacy)
+          targetKey = buildTargetMediaKey({
+            currentKey: sourceKey,
+            privacyPrefix,
+            userId: String(post.user),
+            postId: String(post._id),
+            mediaId: String(media._id),
+          })
+        }
+      }
+
+      if (!targetKey) {
+        const fileName = path.basename(sourceKey) || `${media._id}`
+        targetKey = `public/legacy/media/${media._id}/${fileName}`
+      }
+
+      try {
+        const copyRes = await copyObjectIfNeeded({
+          sourceBucket,
+          sourceKey,
+          targetKey,
+          apply,
+        })
+        if (copyRes.copied) stats.mediaCopied += 1
+
+        if (apply) {
+          await Media.updateOne(
+            { _id: media._id },
+            { $set: { key: targetKey, url: "" } }
+          )
+        }
+        stats.mediaUpdated += 1
+      } catch (error) {
+        stats.mediaCopyErrors += 1
+        console.error("[legacy-media-migration] media copy failed", {
           mediaId: String(media._id),
+          sourceBucket,
+          sourceKey,
+          targetKey,
+          message: error?.message || String(error),
         })
       }
     }
-
-    if (!targetKey) {
-      const fileName = path.basename(sourceKey) || `${media._id}`
-      targetKey = `public/legacy/media/${media._id}/${fileName}`
-    }
-
-    try {
-      const copyRes = await copyObjectIfNeeded({
-        sourceBucket,
-        sourceKey,
-        targetKey,
-        apply,
-      })
-      if (copyRes.copied) stats.mediaCopied += 1
-
-      if (apply) {
-        await Media.updateOne(
-          { _id: media._id },
-          { $set: { key: targetKey, url: "" } }
-        )
-      }
-      stats.mediaUpdated += 1
-    } catch (error) {
-      stats.mediaCopyErrors += 1
-      console.error("[legacy-media-migration] media copy failed", {
-        mediaId: String(media._id),
-        sourceBucket,
-        sourceKey,
-        targetKey,
-        message: error?.message || String(error),
-      })
-    }
   }
 
-  const profileCursor = User.find(
-    {
-      $or: [
-        { "profile_picture.key": { $type: "string", $ne: "" } },
-        { "profile_picture.url": { $type: "string", $ne: "" } },
-      ],
-    },
-    { _id: 1, profile_picture: 1 }
-  )
-    .limit(Math.max(1, Number(maxUsers) || 1000))
-    .cursor()
+  if (includeProfiles) {
+    const profileCursor = User.find(
+      {
+        $or: [
+          { "profile_picture.key": { $type: "string", $ne: "" } },
+          { "profile_picture.url": { $type: "string", $ne: "" } },
+        ],
+      },
+      { _id: 1, profile_picture: 1 }
+    )
+      .limit(Math.max(1, Number(maxUsers) || 1000))
+      .cursor()
 
-  for await (const user of profileCursor) {
-    stats.profileScanned += 1
-    const pfp = user.profile_picture || {}
-    const currentKey = normalizeKey(pfp.key)
-    const currentUrl = typeof pfp.url === "string" ? pfp.url.trim() : ""
+    for await (const user of profileCursor) {
+      stats.profileScanned += 1
+      const pfp = user.profile_picture || {}
+      const currentKey = normalizeKey(pfp.key)
+      const currentUrl = typeof pfp.url === "string" ? pfp.url.trim() : ""
 
-    if (!currentKey && /^https?:\/\//i.test(currentUrl)) {
-      stats.profileSkippedExternal += 1
-      continue
-    }
-
-    if (isNewStyleKey(currentKey)) {
-      if (clearLegacyUrls && apply && currentUrl) {
-        await User.updateOne(
-          { _id: user._id },
-          { $set: { "profile_picture.url": "" } }
-        )
+      if (!currentKey && /^https?:\/\//i.test(currentUrl)) {
+        stats.profileSkippedExternal += 1
+        continue
       }
-      continue
-    }
 
-    const parsedFromUrl = parseBucketAndKeyFromUrl(currentUrl)
-    const sourceKey = parsedFromUrl?.key || currentKey
-    const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
-    if (!sourceKey) continue
-
-    const fileName = path.basename(sourceKey) || `pfp-${user._id}`
-    const targetKey = `public/users/${user._id}/profile/images/${fileName}`
-
-    try {
-      const copyRes = await copyObjectIfNeeded({
-        sourceBucket,
-        sourceKey,
-        targetKey,
-        apply,
-      })
-      if (copyRes.copied) stats.profileCopied += 1
-
-      if (apply) {
-        await User.updateOne(
-          { _id: user._id },
-          {
-            $set: {
-              "profile_picture.key": targetKey,
-              "profile_picture.url": "",
-            },
-          }
-        )
+      if (isNewStyleKey(currentKey)) {
+        if (clearLegacyUrls && apply && currentUrl) {
+          await User.updateOne(
+            { _id: user._id },
+            { $set: { "profile_picture.url": "" } }
+          )
+        }
+        continue
       }
-      stats.profileUpdated += 1
-    } catch (error) {
-      stats.profileCopyErrors += 1
-      console.error("[legacy-media-migration] profile copy failed", {
-        userId: String(user._id),
-        sourceBucket,
-        sourceKey,
-        targetKey,
-        message: error?.message || String(error),
-      })
+
+      const parsedFromUrl = parseBucketAndKeyFromUrl(currentUrl)
+      const sourceKey = parsedFromUrl?.key || currentKey
+      const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
+      if (!sourceKey) continue
+
+      const fileName = path.basename(sourceKey) || `pfp-${user._id}`
+      const targetKey = `public/users/${user._id}/profile/images/${fileName}`
+
+      try {
+        const copyRes = await copyObjectIfNeeded({
+          sourceBucket,
+          sourceKey,
+          targetKey,
+          apply,
+        })
+        if (copyRes.copied) stats.profileCopied += 1
+
+        if (apply) {
+          await User.updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                "profile_picture.key": targetKey,
+                "profile_picture.url": "",
+              },
+            }
+          )
+        }
+        stats.profileUpdated += 1
+      } catch (error) {
+        stats.profileCopyErrors += 1
+        console.error("[legacy-media-migration] profile copy failed", {
+          userId: String(user._id),
+          sourceBucket,
+          sourceKey,
+          targetKey,
+          message: error?.message || String(error),
+        })
+      }
     }
   }
 
@@ -289,4 +295,3 @@ module.exports = {
   runLegacyMediaMigration,
   parseBool,
 }
-

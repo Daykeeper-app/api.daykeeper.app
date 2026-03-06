@@ -20,6 +20,7 @@ const getNotificationRoute = (notification) => {
     case "post_comment":
     case "comment_like":
     case "comment_reply":
+    case "post_mention":
       return data.postId ? `/post/${data.postId}` : null
     case "welcome":
       return "/"
