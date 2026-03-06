@@ -9,7 +9,8 @@
     "start": "node index.js",
     "start:redis": "node queue/index.js",
     "migrate:media-model": "node scripts/migrateMediaToNewModel.js",
-    "migrate:profile-pictures": "node scripts/migrateProfilePicturesToPublic.js"
+    "migrate:profile-pictures": "node scripts/migrateProfilePicturesToPublic.js",
+    "migrate:legacy-media": "node scripts/migrateLegacyMediaToNewBucket.js"
   },
   "author": "",
   "license": "ISC",
