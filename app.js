@@ -23,6 +23,42 @@ const parseBool = (value, fallback) => {
   return fallback
 }
 
+function isObjectIdLike(value) {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    ((typeof value._bsontype === "string" &&
+      value._bsontype.toLowerCase() === "objectid") ||
+      value instanceof mongoose.Types.ObjectId)
+  )
+}
+
+function sanitizeJsonValue(value) {
+  if (value === null || value === undefined) return value
+
+  if (Buffer.isBuffer(value)) {
+    return value.toString("hex")
+  }
+
+  if (isObjectIdLike(value)) {
+    return String(value)
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeJsonValue(item))
+  }
+
+  if (typeof value === "object") {
+    const output = {}
+    for (const [k, v] of Object.entries(value)) {
+      output[k] = sanitizeJsonValue(v)
+    }
+    return output
+  }
+
+  return value
+}
+
 app.disable("x-powered-by")
 
 // IMPORTANT when behind a proxy / load balancer (Render, Railway, Nginx, etc.)
@@ -56,6 +92,13 @@ app.use(readLimiter)
 app.use(cookieParser())
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true, limit: "1mb" }))
+
+// Never leak BSON/Buffer ids in API JSON responses.
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res)
+  res.json = (payload) => originalJson(sanitizeJsonValue(payload))
+  next()
+})
 
 // --------- CORS (supports credentials) ---------
 const allowedOrigins = (process.env.CORS_ORIGINS || "")

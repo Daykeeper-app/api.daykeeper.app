@@ -183,7 +183,7 @@ const postValidationPipeline = (mainUser) => {
           { "user_info.banned": { $ne: true } },
           {
             $or: [
-              { "user_info.verified_email": true },
+              { "user_info.verified_email": { $ne: false } },
               { "user_info._id": mainUserId },
             ],
           },

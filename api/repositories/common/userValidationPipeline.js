@@ -23,7 +23,7 @@ const userValidationPipeline = (options = {}) => {
         $and: [
           { banned: { $ne: true } },
           { status: "public" },
-          { verified_email: true },
+          { verified_email: { $ne: false } },
           ...privacyFilter,
         ],
       },
