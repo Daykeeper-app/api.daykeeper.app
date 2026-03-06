@@ -54,12 +54,15 @@ function toProfilePicturePayload(input = {}) {
   const key = typeof input.key === "string" ? input.key.trim() : ""
   const url = typeof input.url === "string" ? input.url.trim() : ""
   const computed = key ? buildMediaUrlFromKey(key) : ""
+  const isRawS3Url =
+    typeof url === "string" &&
+    /^https?:\/\/.*amazonaws\.com\/raw\//i.test(url)
 
   // Key-first model: when key is mappable to CloudFront, do not persist a static URL.
   return {
     title,
     key,
-    url: computed ? "" : url,
+    url: computed ? "" : isRawS3Url ? "" : url,
   }
 }
 

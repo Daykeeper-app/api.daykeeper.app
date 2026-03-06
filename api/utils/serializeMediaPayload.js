@@ -30,17 +30,25 @@ function isLikelyMediaObject(obj) {
   )
 }
 
-function withMediaUrls(mediaLike) {
+function withMediaUrls(mediaLike, options = {}) {
   if (!isObject(mediaLike)) return mediaLike
 
   const next = { ...mediaLike }
   const urls = isObject(next.urls) ? { ...next.urls } : {}
 
   if (typeof next.key === "string" && next.key.trim()) {
-    const mainUrl = buildMediaUrlFromKey(next.key)
+    const mainUrl = buildMediaUrlFromKey(next.key, {
+      allowLegacy: options.allowLegacy === true,
+    })
     if (mainUrl) {
       next.url = mainUrl
       urls.main = urls.main || mainUrl
+    } else if (
+      typeof next.url === "string" &&
+      /\/raw\//i.test(next.url)
+    ) {
+      // Never expose raw S3 objects to clients; they are private by design.
+      next.url = ""
     }
   }
 
@@ -84,7 +92,10 @@ function serializeMediaPayload(value) {
   }
 
   if (isObject(next.profile_picture)) {
-    next.profile_picture = withMediaUrls(next.profile_picture)
+    // Keep temporary backward compatibility for legacy profile picture keys.
+    next.profile_picture = withMediaUrls(next.profile_picture, {
+      allowLegacy: true,
+    })
   }
 
   for (const [field, fieldValue] of Object.entries(next)) {
