@@ -115,6 +115,7 @@ async function ensurePostMediaPrivacy({ post, medias = [] }) {
 
 module.exports = {
   getPrivacyPrefix,
+  buildTargetMediaKey,
   ensureSinglePostMediaPrivacy,
   ensurePostMediaPrivacy,
 }

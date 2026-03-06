@@ -17,7 +17,8 @@ const getDailyTasks = async (props) => {
     if (username) {
       targetUser = await User.findOne({
         username,
-        status: { $ne: "deleted" },
+        status: "public",
+        verified_email: true,
       })
       if (!targetUser) return notFound("User")
     }

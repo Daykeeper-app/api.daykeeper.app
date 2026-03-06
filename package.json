@@ -7,7 +7,8 @@
     "test": "jest",
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "start:redis": "node queue/index.js"
+    "start:redis": "node queue/index.js",
+    "migrate:media-model": "node scripts/migrateMediaToNewModel.js"
   },
   "author": "",
   "license": "ISC",

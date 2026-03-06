@@ -28,6 +28,9 @@ const feed = async (props) => {
       : "recent"
   const date = typeof props.date === "string" ? props.date.trim() : ""
   const dateStr = /^\d{2}-\d{2}-\d{4}$/.test(date) ? date : null
+  const daysWindow = props.days
+    ? Math.min(365, Math.max(1, Number(props.days) || 30))
+    : 30
 
   const loggedUser = props.user
 
@@ -41,6 +44,7 @@ const feed = async (props) => {
         type: "User",
         pipeline: feedUserMixedPipeline(loggedUser, {
           dateStr,
+          daysWindow,
           maxPostsPerUser,
         }),
         order: orderForPaging,

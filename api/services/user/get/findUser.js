@@ -3,16 +3,25 @@ const mongoose = require(`mongoose`)
 
 const { hideUserData } = require("../../../repositories/index")
 
-const findUser = async ({ userInput = "" }) => {
+const findUser = async ({
+  userInput = "",
+  allowUnverified = false,
+  allowNonPublic = false,
+}) => {
   try {
+    const statusFilter = allowNonPublic ? { $ne: "deleted" } : "public"
+    const verifiedFilter = allowUnverified ? { $in: [true, false, null] } : true
+
     let user = await User.findOne({
       username: userInput,
-      status: { $ne: "deleted" },
+      status: statusFilter,
+      verified_email: verifiedFilter,
     }).select(hideUserData)
     if (!user && mongoose.Types.ObjectId.isValid(userInput))
       user = await User.findOne({
         _id: userInput,
-        status: { $ne: "deleted" },
+        status: statusFilter,
+        verified_email: verifiedFilter,
       }).select(hideUserData)
 
     return user

@@ -25,7 +25,8 @@ const getTasksByDate = async (props) => {
 
   const targetUser = await User.findOne({
     username,
-    status: { $ne: "deleted" },
+    status: "public",
+    verified_email: true,
   }).select("_id username")
   if (!targetUser) return notFound("User")
 

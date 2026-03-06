@@ -181,6 +181,7 @@ const postValidationPipeline = (mainUser) => {
 
           // Post owner not banned
           { "user_info.banned": { $ne: true } },
+          { "user_info.verified_email": true },
 
           // Post must be public (status)
           { status: "public" },

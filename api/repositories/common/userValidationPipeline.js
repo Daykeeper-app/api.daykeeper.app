@@ -20,7 +20,12 @@ const userValidationPipeline = (options = {}) => {
   return [
     {
       $match: {
-        $and: [{ banned: { $ne: true } }, { status: "public" }, ...privacyFilter],
+        $and: [
+          { banned: { $ne: true } },
+          { status: "public" },
+          { verified_email: true },
+          ...privacyFilter,
+        ],
       },
     },
   ]

@@ -115,6 +115,7 @@ const dayElementValidationPipeline = (mainUser) => [
         { "blocked_by_owner_info.0": { $exists: false } },
 
         { "user_info.banned": { $ne: true } },
+        { "user_info.verified_email": true },
 
         // privacy rules
         {

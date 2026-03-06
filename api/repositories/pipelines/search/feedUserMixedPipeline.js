@@ -52,10 +52,15 @@ function time12hExpr(dateExpr, tz) {
 
 const feedUserMixedPipeline = (
   mainUser,
-  { dateStr = null, maxPostsPerUser = DEFAULT_MAXPOSTSPERUSER } = {}
+  {
+    dateStr = null,
+    daysWindow = 30,
+    maxPostsPerUser = DEFAULT_MAXPOSTSPERUSER,
+  } = {}
 ) => {
   const tz = mainUser?.timeZone || defaultTimeZone
   const mainUserId = toObjectIdOrNull(mainUser?._id)
+  const safeDaysWindow = Math.min(365, Math.max(1, Number(daysWindow) || 30))
 
   const dayStartExpr = dateStr
     ? {
@@ -73,7 +78,29 @@ const feedUserMixedPipeline = (
           timezone: tz,
         },
       }
-    : { $dateTrunc: { date: "$$NOW", unit: "day", timezone: tz } }
+    : {
+        $dateTrunc: {
+          date: {
+            $dateSubtract: {
+              startDate: "$$NOW",
+              unit: "day",
+              amount: safeDaysWindow - 1,
+            },
+          },
+          unit: "day",
+          timezone: tz,
+        },
+      }
+
+  const dayEndExpr = dateStr
+    ? { $dateAdd: { startDate: dayStartExpr, unit: "day", amount: 1 } }
+    : {
+        $dateAdd: {
+          startDate: { $dateTrunc: { date: "$$NOW", unit: "day", timezone: tz } },
+          unit: "day",
+          amount: 1,
+        },
+      }
 
   const visibilityExpr = {
     $or: [
@@ -94,7 +121,9 @@ const feedUserMixedPipeline = (
   }
 
   return [
-    { $match: { status: "public", banned: { $ne: true } } },
+    {
+      $match: { status: "public", banned: { $ne: true }, verified_email: true },
+    },
 
     // follow info
     {
@@ -226,13 +255,7 @@ const feedUserMixedPipeline = (
     },
 
     { $addFields: { dayStart: dayStartExpr } },
-    {
-      $addFields: {
-        dayEnd: {
-          $dateAdd: { startDate: "$dayStart", unit: "day", amount: 1 },
-        },
-      },
-    },
+    { $addFields: { dayEnd: dayEndExpr } },
 
     // posts list
     {
@@ -480,7 +503,7 @@ const feedUserMixedPipeline = (
       },
     },
 
-    // include only users that have at least one item today
+    // include only users that have at least one item in the selected range
     {
       $match: {
         $expr: {
