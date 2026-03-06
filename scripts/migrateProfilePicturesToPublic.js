@@ -32,6 +32,34 @@ function extractKeyFromUrl(raw) {
   }
 }
 
+function parseBucketAndKeyFromUrl(raw) {
+  if (typeof raw !== "string" || !/^https?:\/\//i.test(raw.trim())) return null
+
+  let u
+  try {
+    u = new URL(raw)
+  } catch {
+    return null
+  }
+
+  const host = String(u.hostname || "").toLowerCase()
+  const pathname = decodeURIComponent(String(u.pathname || "")).replace(/^\/+/, "")
+  if (!pathname) return null
+
+  let match = host.match(/^([^.]+)\.s3\.amazonaws\.com$/)
+  if (match) return { bucket: match[1], key: pathname }
+
+  match = host.match(/^([^.]+)\.s3\.[^.]+\.amazonaws\.com$/)
+  if (match) return { bucket: match[1], key: pathname }
+
+  if (host === "s3.amazonaws.com" || /^s3\.[^.]+\.amazonaws\.com$/.test(host)) {
+    const [bucket, ...rest] = pathname.split("/")
+    if (bucket && rest.length) return { bucket, key: rest.join("/") }
+  }
+
+  return null
+}
+
 function encodeCopySource(bucket, key) {
   return `${bucket}/${String(key || "")
     .split("/")
@@ -39,24 +67,26 @@ function encodeCopySource(bucket, key) {
     .join("/")}`
 }
 
-async function moveStorageObject(fromKey, toKey) {
+async function moveStorageObject(fromKey, toKey, sourceBucket = bucketName) {
   if (!fromKey || !toKey || fromKey === toKey) return toKey
 
   if (storageType === "s3") {
     await awsS3Config
       .copyObject({
         Bucket: bucketName,
-        CopySource: encodeCopySource(bucketName, fromKey),
+        CopySource: encodeCopySource(sourceBucket, fromKey),
         Key: toKey,
       })
       .promise()
 
-    await awsS3Config
-      .deleteObject({
-        Bucket: bucketName,
-        Key: fromKey,
-      })
-      .promise()
+    if (sourceBucket === bucketName) {
+      await awsS3Config
+        .deleteObject({
+          Bucket: bucketName,
+          Key: fromKey,
+        })
+        .promise()
+    }
 
     return toKey
   }
@@ -72,6 +102,7 @@ function targetProfileKey(userId, sourceKey) {
 async function run() {
   const args = process.argv.slice(2)
   const apply = hasFlag(args, "--apply")
+  const legacyBucket = String(process.env.LEGACY_BUCKET_NAME || "daykeeper").trim()
 
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI is missing in env")
@@ -111,13 +142,17 @@ async function run() {
         continue
       }
 
-      let nextKey = currentKey || extractKeyFromUrl(currentUrl)
+      const parsedUrl = parseBucketAndKeyFromUrl(currentUrl)
+      const sourceBucket = parsedUrl?.bucket || (currentKey ? bucketName : legacyBucket)
+      const sourceKey = parsedUrl?.key || currentKey || extractKeyFromUrl(currentUrl)
+
+      let nextKey = sourceKey
       if (!nextKey) continue
 
       let moved = false
       if (!nextKey.startsWith("public/")) {
         const targetKey = targetProfileKey(user._id, nextKey)
-        if (apply) await moveStorageObject(nextKey, targetKey)
+        if (apply) await moveStorageObject(nextKey, targetKey, sourceBucket)
         nextKey = targetKey
         moved = true
         stats.movedToPublicPrefix += 1
@@ -151,4 +186,3 @@ run().catch((error) => {
   console.error("[profile-pfp-migration] failed", error)
   process.exitCode = 1
 })
-

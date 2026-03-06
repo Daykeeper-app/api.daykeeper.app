@@ -85,11 +85,22 @@ function buildMediaUrlFromKey(objectKey, options = {}) {
   const key = normalizeObjectKey(trimmed)
 
   const baseUrl = getCloudFrontBaseUrl()
-  if (!baseUrl) return ""
-
-  if (isPublicKey(key)) return `${baseUrl}/${key}`
+  if (isPublicKey(key)) {
+    if (!baseUrl) return ""
+    return `${baseUrl}/${key}`
+  }
   if (isPrivateKey(key)) {
     return getCloudFrontSignedUrlForPrivateKey(key, options.ttlSeconds)
+  }
+
+  // Temporary compatibility: allow CloudFront delivery of raw profile-picture keys
+  // while migration moves them to public/.
+  if (
+    shouldAllowLegacyMediaFallback(options) &&
+    key.startsWith("raw/") &&
+    baseUrl
+  ) {
+    return `${baseUrl}/${key}`
   }
 
   if (shouldAllowLegacyMediaFallback(options)) {
