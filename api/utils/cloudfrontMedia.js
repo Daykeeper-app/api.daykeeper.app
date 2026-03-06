@@ -24,6 +24,16 @@ function getCloudFrontBaseUrl() {
   return domain ? `https://${domain}` : ""
 }
 
+function getLegacyMediaBaseUrl() {
+  const raw = (
+    process.env.LEGACY_MEDIA_BASE_URL ||
+    process.env.LEGACY_PROFILE_PICTURE_BASE_URL ||
+    ""
+  ).trim()
+  if (!raw) return ""
+  return raw.replace(/\/+$/, "")
+}
+
 function getSigningTtlSeconds() {
   const parsed = Number(process.env.CLOUDFRONT_SIGN_TTL_SECONDS)
   if (!Number.isFinite(parsed) || parsed <= 0) return 900
@@ -74,9 +84,12 @@ function buildMediaUrlFromKey(objectKey, options = {}) {
     return getCloudFrontSignedUrlForPrivateKey(key, options.ttlSeconds)
   }
 
-  // Backward-compatible fallback for legacy keys that do not have
-  // explicit public/private prefixes (e.g. old profile pictures).
-  return `${baseUrl}/${key}`
+  if (options.allowLegacy === true) {
+    const legacyBase = getLegacyMediaBaseUrl()
+    if (legacyBase) return `${legacyBase}/${key}`
+  }
+
+  return ""
 }
 
 module.exports = {
