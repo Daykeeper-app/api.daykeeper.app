@@ -71,9 +71,14 @@ const logoutController = async (req, res) => {
 // verifyEmail
 const confirmEmailController = async (req, res) => {
   try {
-    const { code, message } = await confirmEmail(req.body)
+    const { code, message, props } = await confirmEmail({
+      ...req.body,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      deviceId: req.body?.deviceId || null,
+    })
 
-    return res.status(code).json({ message })
+    return res.status(code).json({ message, ...(props || {}) })
   } catch (error) {
     return res.status(500).json({ message: serverError(error.message) })
   }
