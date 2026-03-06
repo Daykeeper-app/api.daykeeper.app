@@ -2,10 +2,17 @@ const User = require("../../models/User")
 const Followers = require("../../models/Followers")
 const bcrypt = require("bcryptjs")
 const crypto = require("crypto")
+const path = require("path")
+const fs = require("fs")
+const { promisify } = require("util")
 const deleteFile = require("../../utils/deleteFile")
 const { sendVerificationEmail } = require("../../utils/emailHandler")
 const { buildMediaUrlFromKey } = require("../../utils/cloudfrontMedia")
 const { serializeMediaPayload } = require("../../utils/serializeMediaPayload")
+const awsS3Config = require("../../config/awsS3Config")
+const {
+  aws: { bucketName, storageType },
+} = require("../../../config")
 
 const {
   errors: { notFound },
@@ -53,6 +60,75 @@ function toProfilePicturePayload(input = {}) {
     title,
     key,
     url: computed ? "" : url,
+  }
+}
+
+function buildProfilePictureTargetKey({ currentKey, userId }) {
+  const normalized = String(currentKey || "").trim().replace(/^\/+/, "")
+  const fileName = path.basename(normalized || `pfp-${Date.now()}`)
+  return `public/users/${String(userId)}/profile/images/${fileName}`
+}
+
+function encodeCopySource(bucket, key) {
+  return `${bucket}/${String(key || "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`
+}
+
+async function moveStorageObject(fromKey, toKey) {
+  const source = String(fromKey || "").trim()
+  const target = String(toKey || "").trim()
+  if (!source || !target || source === target) return target
+
+  if (storageType === "s3") {
+    await awsS3Config
+      .copyObject({
+        Bucket: bucketName,
+        CopySource: encodeCopySource(bucketName, source),
+        Key: target,
+      })
+      .promise()
+
+    await awsS3Config
+      .deleteObject({
+        Bucket: bucketName,
+        Key: source,
+      })
+      .promise()
+
+    return target
+  }
+
+  if (storageType === "local") {
+    const uploadRoot = path.resolve(__dirname, "..", "..", "tmp", "uploads")
+    const srcPath = path.resolve(uploadRoot, source)
+    const dstPath = path.resolve(uploadRoot, target)
+    await promisify(fs.mkdir)(path.dirname(dstPath), { recursive: true })
+    await promisify(fs.rename)(srcPath, dstPath)
+    return target
+  }
+
+  return target
+}
+
+async function ensureProfilePicturePublicKey(file, userId) {
+  const currentKey = String(file?.key || "").trim().replace(/^\/+/, "")
+  if (!currentKey) return file
+  if (currentKey.startsWith("public/")) return file
+
+  // Profile pictures are final assets; ensure they live in public/ so CloudFront can serve.
+  const targetKey = buildProfilePictureTargetKey({
+    currentKey,
+    userId,
+  })
+
+  if (targetKey === currentKey) return file
+
+  await moveStorageObject(currentKey, targetKey)
+  return {
+    ...file,
+    key: targetKey,
   }
 }
 
@@ -135,10 +211,11 @@ const updateUser = async (params) => {
   if (timeZoneChanged) set.timeZone = timeZone
 
   if (file) {
+    const normalizedFile = await ensureProfilePicturePublicKey(file, user._id)
     set.profile_picture = toProfilePicturePayload({
-      title: file.originalname,
-      key: file.key,
-      url: file.url || "",
+      title: normalizedFile.originalname,
+      key: normalizedFile.key,
+      url: normalizedFile.url || "",
     })
   }
 

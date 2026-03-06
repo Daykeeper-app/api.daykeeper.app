@@ -21,12 +21,15 @@ function sanitizeSegment(value, fallback = "file") {
 function getUploadPrefix(req, fileType) {
   const userId = req?.user?._id ? String(req.user._id) : "anonymous"
   const baseUrl = String(req?.baseUrl || "")
+  const path = String(req?.path || "")
+  const originalUrl = String(req?.originalUrl || "").split("?")[0]
+  const routeHint = `${baseUrl}${path} ${originalUrl}`.toLowerCase()
 
-  if (baseUrl.includes("/post")) {
+  if (routeHint.includes("/post")) {
     return `raw/users/${sanitizeSegment(userId)}/posts/${fileType}`
   }
 
-  if (baseUrl.includes("/user")) {
+  if (routeHint.includes("/user")) {
     return `public/users/${sanitizeSegment(userId)}/profile/${fileType}`
   }
 
