@@ -30,16 +30,14 @@ function isLikelyMediaObject(obj) {
   )
 }
 
-function withMediaUrls(mediaLike, options = {}) {
+function withMediaUrls(mediaLike) {
   if (!isObject(mediaLike)) return mediaLike
 
   const next = { ...mediaLike }
   const urls = isObject(next.urls) ? { ...next.urls } : {}
 
   if (typeof next.key === "string" && next.key.trim()) {
-    const mainUrl = buildMediaUrlFromKey(next.key, {
-      allowLegacy: options.allowLegacy === true,
-    })
+    const mainUrl = buildMediaUrlFromKey(next.key)
     if (mainUrl) {
       next.url = mainUrl
       urls.main = urls.main || mainUrl
@@ -86,11 +84,7 @@ function serializeMediaPayload(value) {
   }
 
   if (isObject(next.profile_picture)) {
-    // Temporary backward-compatibility for old profile picture keys
-    // that are not in public/private prefixes yet.
-    next.profile_picture = withMediaUrls(next.profile_picture, {
-      allowLegacy: true,
-    })
+    next.profile_picture = withMediaUrls(next.profile_picture)
   }
 
   for (const [field, fieldValue] of Object.entries(next)) {
