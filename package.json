@@ -8,9 +8,11 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "start:redis": "node queue/index.js",
-    "migrate:media-model": "node scripts/migrateMediaToNewModel.js",
+    "migrate:media-model": "node scripts/migrateAllToNewMedia.js",
+    "migrate:all-new-media": "node scripts/migrateAllToNewMedia.js",
     "migrate:profile-pictures": "node scripts/migrateProfilePicturesToPublic.js",
-    "migrate:legacy-media": "node scripts/migrateLegacyMediaToNewBucket.js"
+    "migrate:legacy-media": "node scripts/migrateLegacyMediaToNewBucket.js",
+    "migrate:default-pfp": "node scripts/migrateDefaultProfilePicture.js"
   },
   "author": "",
   "license": "ISC",

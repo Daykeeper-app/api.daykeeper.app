@@ -81,6 +81,26 @@ function parseBucketAndKeyFromUrl(raw) {
   return null
 }
 
+function inferSourceBucket({
+  parsedBucket,
+  sourceKey,
+  legacyBucketName,
+}) {
+  if (parsedBucket) return parsedBucket
+
+  const normalized = normalizeKey(sourceKey)
+  // Keys already using current storage layout are expected in the target bucket.
+  if (
+    normalized.startsWith("raw/") ||
+    normalized.startsWith("public/") ||
+    normalized.startsWith("private/")
+  ) {
+    return targetBucketName
+  }
+
+  return legacyBucketName
+}
+
 async function copyObjectIfNeeded({ sourceBucket, sourceKey, targetKey, apply }) {
   if (!sourceBucket || !sourceKey || !targetBucketName || !targetKey) {
     return { copied: false, reason: "missing_fields" }
@@ -154,7 +174,11 @@ async function runLegacyMediaMigration({
 
       const parsedFromUrl = parseBucketAndKeyFromUrl(media.url)
       const sourceKey = parsedFromUrl?.key || key
-      const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
+      const sourceBucket = inferSourceBucket({
+        parsedBucket: parsedFromUrl?.bucket,
+        sourceKey,
+        legacyBucketName,
+      })
       if (!sourceKey) continue
 
       let targetKey = ""
@@ -248,7 +272,11 @@ async function runLegacyMediaMigration({
 
       const parsedFromUrl = parseBucketAndKeyFromUrl(currentUrl)
       const sourceKey = parsedFromUrl?.key || currentKey
-      const sourceBucket = parsedFromUrl?.bucket || legacyBucketName
+      const sourceBucket = inferSourceBucket({
+        parsedBucket: parsedFromUrl?.bucket,
+        sourceKey,
+        legacyBucketName,
+      })
       if (!sourceKey) continue
 
       const fileName = path.basename(sourceKey) || `pfp-${user._id}`

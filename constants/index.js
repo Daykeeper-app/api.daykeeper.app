@@ -3,11 +3,15 @@ const { errors, errorGif } = require(`./errors`)
 const success = require(`./success`)
 const messages = require("./messages")
 const trustScore = require("./trustScore")
+const path = require("path")
 
 const defaultPfpKey = String(
-  process.env.DEFAULT_PFP_KEY || "public/defaults/Doggo.jpg"
+  process.env.DEFAULT_PFP_KEY || "public/DaykeeperPFP.png"
 ).trim()
 const defaultPfpUrl = String(process.env.DEFAULT_PFP_URL || "").trim()
+const defaultPfpTitle = String(
+  process.env.DEFAULT_PFP_TITLE || path.basename(defaultPfpKey || "DaykeeperPFP.png")
+).trim()
 
 module.exports = {
   maxPageSize: 20,
@@ -38,7 +42,7 @@ module.exports = {
       "create",
     ],
     defaultPfp: {
-      title: "Doggo.jpg",
+      title: defaultPfpTitle,
       key: defaultPfpKey,
       url: defaultPfpUrl,
       mimetype: "image/jpeg",

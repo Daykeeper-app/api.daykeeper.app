@@ -13,6 +13,7 @@ async function hardDeleteProfilePicture(userId) {
   const title = pfp?.title
 
   if (!key) return 0
+  if (key === defaultPfp.key) return 0
   if (title && title === defaultPfp.title) return 0
 
   await hardDeleteStorageObject(key)

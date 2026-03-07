@@ -37,9 +37,7 @@ function withMediaUrls(mediaLike, options = {}) {
   const urls = isObject(next.urls) ? { ...next.urls } : {}
 
   if (typeof next.key === "string" && next.key.trim()) {
-    const mainUrl = buildMediaUrlFromKey(next.key, {
-      allowLegacy: options.allowLegacy === true,
-    })
+    const mainUrl = buildMediaUrlFromKey(next.key)
     if (mainUrl) {
       next.url = mainUrl
       urls.main = urls.main || mainUrl
@@ -92,10 +90,7 @@ function serializeMediaPayload(value) {
   }
 
   if (isObject(next.profile_picture)) {
-    // Keep temporary backward compatibility for legacy profile picture keys.
-    next.profile_picture = withMediaUrls(next.profile_picture, {
-      allowLegacy: true,
-    })
+    next.profile_picture = withMediaUrls(next.profile_picture)
   }
 
   for (const [field, fieldValue] of Object.entries(next)) {

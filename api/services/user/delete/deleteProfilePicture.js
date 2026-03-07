@@ -5,7 +5,11 @@ const {
 
 const deleteProfilePicture = async (user) => {
   try {
-    if (user.profile_picture?.title !== defaultPfp.title) {
+    const isDefault =
+      user?.profile_picture?.key === defaultPfp.key ||
+      user?.profile_picture?.title === defaultPfp.title
+
+    if (!isDefault) {
       await deleteFile({ key: user.profile_picture.key })
     }
     return user.profile_picture

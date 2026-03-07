@@ -14,6 +14,7 @@ async function hardDeleteUserProfilePicture(userId) {
 
   // don't delete the shared default file
   if (!key) return
+  if (key === defaultPfp.key) return
   if (title && title === defaultPfp.title) return
 
   await hardDeleteStorageObject(key)

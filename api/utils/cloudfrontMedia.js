@@ -24,24 +24,6 @@ function getCloudFrontBaseUrl() {
   return domain ? `https://${domain}` : ""
 }
 
-function getLegacyMediaBaseUrl() {
-  const raw = (
-    process.env.LEGACY_MEDIA_BASE_URL ||
-    process.env.LEGACY_PROFILE_PICTURE_BASE_URL ||
-    ""
-  ).trim()
-  if (!raw) return ""
-  return raw.replace(/\/+$/, "")
-}
-
-function shouldAllowLegacyMediaFallback(options = {}) {
-  if (typeof options.allowLegacy === "boolean") return options.allowLegacy
-  const flag = String(process.env.ALLOW_LEGACY_MEDIA_URLS || "")
-    .trim()
-    .toLowerCase()
-  return flag === "true" || flag === "1" || flag === "yes"
-}
-
 function getSigningTtlSeconds() {
   const parsed = Number(process.env.CLOUDFRONT_SIGN_TTL_SECONDS)
   if (!Number.isFinite(parsed) || parsed <= 0) return 900
@@ -91,21 +73,6 @@ function buildMediaUrlFromKey(objectKey, options = {}) {
   }
   if (isPrivateKey(key)) {
     return getCloudFrontSignedUrlForPrivateKey(key, options.ttlSeconds)
-  }
-
-  // Temporary compatibility: allow CloudFront delivery of raw profile-picture keys
-  // while migration moves them to public/.
-  if (
-    shouldAllowLegacyMediaFallback(options) &&
-    key.startsWith("raw/") &&
-    baseUrl
-  ) {
-    return `${baseUrl}/${key}`
-  }
-
-  if (shouldAllowLegacyMediaFallback(options)) {
-    const legacyBase = getLegacyMediaBaseUrl()
-    if (legacyBase) return `${legacyBase}/${key}`
   }
 
   return ""
