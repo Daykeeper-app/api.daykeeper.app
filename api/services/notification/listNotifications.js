@@ -6,18 +6,12 @@ const {
   success: { fetched },
 } = require("../../../constants/index")
 
-const MEDIA_REVIEW_NOTIFICATION_TYPES = [
-  "media_review",
-  "media_approved",
-  "media_rejected",
-  "media_moderation",
-  "post_media_approved",
-  "post_media_rejected",
-  "profile_media_approved",
-  "profile_media_rejected",
-  "profile_picture_approved",
-  "profile_picture_rejected",
-]
+const MEDIA_REVIEW_TITLE_FRAGMENT = "media review"
+
+function isMediaReviewNotification(notification) {
+  const title = String(notification?.title || "").toLowerCase()
+  return title.includes(MEDIA_REVIEW_TITLE_FRAGMENT)
+}
 
 const getNotificationRoute = (notification) => {
   const type = notification?.type
@@ -59,25 +53,50 @@ async function listNotifications(props = {}, options = {}) {
   if (!loggedUser?._id) return unauthorized("fetch notifications")
 
   const match = { user: loggedUser._id }
-
-  if (mode === "media_only") {
-    match.type = { $in: MEDIA_REVIEW_NOTIFICATION_TYPES }
-  } else if (mode === "exclude_media") {
-    match.type = { $nin: MEDIA_REVIEW_NOTIFICATION_TYPES }
-  }
+  // mode filtering for split endpoints is done in-code via title match
 
   const parsedRead = parseOptionalBoolean(read)
   if (parsedRead !== null) match.read = parsedRead
 
-  const response = await getDataWithPages({
-    type: "Notification",
-    pipeline: [{ $match: match }],
-    page,
-    maxPageSize,
-    order: "recent",
-  })
+  let response
+  let rawData
 
-  const data = (response.data || []).map((notification) => ({
+  if (mode === "all") {
+    response = await getDataWithPages({
+      type: "Notification",
+      pipeline: [{ $match: match }],
+      page,
+      maxPageSize,
+      order: "recent",
+    })
+    rawData = response.data || []
+  } else {
+    const p = Math.max(1, Number(page) || 1)
+    const size = Math.max(1, Number(maxPageSize) || 20)
+    const skip = (p - 1) * size
+
+    const allRows = await Notification.find(match)
+      .sort({ created_at: -1, _id: -1 })
+      .lean()
+
+    const filtered = allRows.filter((row) =>
+      mode === "media_only"
+        ? isMediaReviewNotification(row)
+        : !isMediaReviewNotification(row)
+    )
+
+    rawData = filtered.slice(skip, skip + size)
+    response = {
+      data: rawData,
+      page: p,
+      pageSize: rawData.length,
+      maxPageSize: size,
+      totalPages: filtered.length ? Math.ceil(filtered.length / size) : 0,
+      totalCount: filtered.length,
+    }
+  }
+
+  const data = rawData.map((notification) => ({
     ...serializeMediaPayload(notification),
     seen: Boolean(notification?.read),
     route: getNotificationRoute(notification),
@@ -100,5 +119,5 @@ async function listNotifications(props = {}, options = {}) {
 
 module.exports = {
   listNotifications,
-  MEDIA_REVIEW_NOTIFICATION_TYPES,
+  MEDIA_REVIEW_TITLE_FRAGMENT,
 }

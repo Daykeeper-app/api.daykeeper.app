@@ -25,6 +25,7 @@ function shouldSetToNewDefault(profilePicture = {}, options = {}) {
   const key = normalizeKey(profilePicture.key)
   const title = normalizeTitle(profilePicture.title)
   const url = typeof profilePicture.url === "string" ? profilePicture.url.trim() : ""
+  const keyLower = key.toLowerCase()
 
   const newDefaultKey = normalizeKey(defaultPfp?.key)
   const oldDefaultKey = normalizeKey(options.oldDefaultKey || "public/defaults/Doggo.jpg")
@@ -37,6 +38,14 @@ function shouldSetToNewDefault(profilePicture = {}, options = {}) {
   if (key === oldDefaultKey) return true
   if (title === oldDefaultTitle) return true
   if (/Doggo\.jpg/i.test(url)) return true
+
+  // Legacy per-user copied defaults, e.g. public/users/<id>/profile/images/Doggo.jpg
+  if (
+    keyLower.endsWith("/doggo.jpg") &&
+    keyLower.includes("/profile/images/")
+  ) {
+    return true
+  }
 
   // Broken/empty profile_picture payloads should move to new default.
   if (!key && !url) return true
