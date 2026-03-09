@@ -1,4 +1,5 @@
 const { buildMediaUrlFromKey } = require("./cloudfrontMedia")
+const { Types } = require("mongoose")
 
 const VARIANT_KEY_FIELDS = [
   ["thumbKey", "thumb"],
@@ -13,6 +14,52 @@ const VARIANT_KEY_FIELDS = [
 
 function isObject(value) {
   return Object.prototype.toString.call(value) === "[object Object]"
+}
+
+function tryNormalizeObjectIdLike(value) {
+  if (value == null) return null
+
+  if (value instanceof Types.ObjectId) {
+    return value.toString()
+  }
+
+  if (isObject(value) && typeof value.$oid === "string") {
+    return value.$oid
+  }
+
+  if (isObject(value) && typeof value.toHexString === "function") {
+    try {
+      return value.toHexString()
+    } catch {
+      // ignore
+    }
+  }
+
+  if (
+    isObject(value) &&
+    typeof value.buffer === "string" &&
+    /^[a-fA-F0-9]{24}$/.test(value.buffer)
+  ) {
+    return value.buffer
+  }
+
+  if (isObject(value) && Buffer.isBuffer(value.buffer)) {
+    return value.buffer.toString("hex")
+  }
+
+  if (
+    isObject(value) &&
+    value.type === "Buffer" &&
+    Array.isArray(value.data)
+  ) {
+    try {
+      return Buffer.from(value.data).toString("hex")
+    } catch {
+      // ignore
+    }
+  }
+
+  return null
 }
 
 function isLikelyMediaObject(obj) {
@@ -74,6 +121,9 @@ function shouldProjectUrlForKeyField(keyField) {
 }
 
 function serializeMediaPayload(value) {
+  const normalizedId = tryNormalizeObjectIdLike(value)
+  if (normalizedId) return normalizedId
+
   if (Array.isArray(value)) {
     return value.map((item) => serializeMediaPayload(item))
   }

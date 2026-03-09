@@ -1,5 +1,6 @@
 const DayEvent = require("../../../models/DayEvent")
 const getEventPipeline = require("../../../repositories/pipelines/day/events/getEventPipeline")
+const { serializeMediaPayload } = require("../../../utils/serializeMediaPayload")
 const {
   normalizeObjectIdInput,
   isValidObjectIdInput,
@@ -24,7 +25,7 @@ const getEvent = async ({ eventId, loggedUser }) => {
 
     if (!event || event.length === 0) return notFound("Event")
 
-    return fetched("event", { data: event[0] })
+    return fetched("event", { data: serializeMediaPayload(event[0]) })
   } catch (error) {
     throw error
   }

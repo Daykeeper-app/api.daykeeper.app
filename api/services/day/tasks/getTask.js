@@ -1,5 +1,6 @@
 const DayTask = require("../../../models/DayTask")
 const getTaskPipeline = require("../../../repositories/pipelines/day/tasks/getTaskPipeline")
+const { serializeMediaPayload } = require("../../../utils/serializeMediaPayload")
 const {
   normalizeObjectIdInput,
   isValidObjectIdInput,
@@ -24,7 +25,7 @@ const getTask = async ({ taskId, loggedUser }) => {
     const task = await DayTask.aggregate(getTaskPipeline(normalizedTaskId, loggedUser))
     if (!task || task.length === 0) return notFound("Task")
 
-    return fetched("task", { data: task[0] })
+    return fetched("task", { data: serializeMediaPayload(task[0]) })
   } catch (error) {
     throw error
   }
