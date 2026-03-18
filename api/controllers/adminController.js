@@ -8,12 +8,24 @@ const getReportedElements = require("../services/admin/getReportedElements")
 const getBannedElements = require("../services/admin/getBannedElements")
 const getBanHistoryMadeByAdmin = require("../services/admin/getBanHistoryMadeByAdmin")
 const getElementBanHistory = require("../services/admin/getElementBanHistory")
+const getNewUsersAnalytics = require("../services/admin/analytics/getNewUsersAnalytics")
+const getNewContentAnalytics = require("../services/admin/analytics/getNewContentAnalytics")
+const getNewInteractionsAnalytics = require("../services/admin/analytics/getNewInteractionsAnalytics")
+const getServerStatus = require("../services/admin/analytics/getServerStatus")
 
 const banOrUnbanUser = require("../services/admin/user/banOrUnbanUser")
 const deleteBannedUser = require("../services/admin/user/deleteBannedUser")
 
 const banOrUnbanPost = require(`../services/admin/post/banOrUnbanPost`)
 const deleteBannedPosts = require(`../services/admin/post/deleteBannedPost`)
+
+const parseAnalyticsDays = (value) => {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined
+
+  return Math.floor(parsed)
+}
 
 const deleteReportController = async (req, res) => {
   try {
@@ -86,6 +98,52 @@ const getElementBanHistoryController = async (req, res) => {
       maxPageSize,
       elementId: req.params.elementId,
     })
+
+    return res.status(code).json({ message, ...response })
+  } catch (error) {
+    return res.status(500).json({ message: serverError(error.toString()) })
+  }
+}
+
+const getNewUsersAnalyticsController = async (req, res) => {
+  try {
+    const { code, message, response } = await getNewUsersAnalytics({
+      days: parseAnalyticsDays(req.query?.days),
+    })
+
+    return res.status(code).json({ message, ...response })
+  } catch (error) {
+    return res.status(500).json({ message: serverError(error.toString()) })
+  }
+}
+
+const getNewContentAnalyticsController = async (req, res) => {
+  try {
+    const { code, message, response } = await getNewContentAnalytics({
+      days: parseAnalyticsDays(req.query?.days),
+    })
+
+    return res.status(code).json({ message, ...response })
+  } catch (error) {
+    return res.status(500).json({ message: serverError(error.toString()) })
+  }
+}
+
+const getNewInteractionsAnalyticsController = async (req, res) => {
+  try {
+    const { code, message, response } = await getNewInteractionsAnalytics({
+      days: parseAnalyticsDays(req.query?.days),
+    })
+
+    return res.status(code).json({ message, ...response })
+  } catch (error) {
+    return res.status(500).json({ message: serverError(error.toString()) })
+  }
+}
+
+const getServerStatusController = async (req, res) => {
+  try {
+    const { code, message, response } = await getServerStatus()
 
     return res.status(code).json({ message, ...response })
   } catch (error) {
@@ -185,6 +243,10 @@ module.exports = {
   getBannedElements: getBannedElementsController,
   getBanHistoryMadeByAdmin: getBanHistoryMadeByAdminController,
   getElementBanHistory: getElementBanHistoryController,
+  getNewUsersAnalytics: getNewUsersAnalyticsController,
+  getNewContentAnalytics: getNewContentAnalyticsController,
+  getNewInteractionsAnalytics: getNewInteractionsAnalyticsController,
+  getServerStatus: getServerStatusController,
 
   banOrUnbanUser: banOrUnbanUserController,
   deleteBannedUser: deleteBannedUserController,

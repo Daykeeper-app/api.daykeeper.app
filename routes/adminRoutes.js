@@ -6,6 +6,10 @@ const {
   getBannedElements,
   getBanHistoryMadeByAdmin,
   getElementBanHistory,
+  getNewUsersAnalytics,
+  getNewContentAnalytics,
+  getNewInteractionsAnalytics,
+  getServerStatus,
 
   banOrUnbanUser,
   deleteBannedUser,
@@ -27,6 +31,30 @@ router.get(
 )
 router.get("/reports", checkTokenMW, checkAdminMW, getReportedElements)
 router.get("/bans", checkTokenMW, checkAdminMW, getBannedElements)
+router.get(
+  "/about/users",
+  checkTokenMW,
+  checkAdminMW,
+  getNewUsersAnalytics
+)
+router.get(
+  "/about/content",
+  checkTokenMW,
+  checkAdminMW,
+  getNewContentAnalytics
+)
+router.get(
+  "/about/interactions",
+  checkTokenMW,
+  checkAdminMW,
+  getNewInteractionsAnalytics
+)
+router.get(
+  "/about/server-status",
+  checkTokenMW,
+  checkAdminMW,
+  getServerStatus
+)
 router.get(
   "/banHistory/:elementId",
   checkTokenMW,
