@@ -1,6 +1,5 @@
 const User = require("../../models/User")
 const crypto = require("crypto")
-const login = require("./login")
 
 const {
   errors: {
@@ -17,7 +16,7 @@ function hashCode(code) {
 }
 
 const confirmEmail = async (props) => {
-  let { email, verificationCode, ip, userAgent, deviceId } = props
+  let { email, verificationCode } = props
 
   if (!verificationCode || !email) return fieldNotFilledIn("Token or Email")
 
@@ -42,15 +41,7 @@ const confirmEmail = async (props) => {
   }
 
   if (user.verified_email) {
-    const loginResponse = await login({
-      user,
-      deviceId: deviceId || null,
-      ip,
-      userAgent,
-    })
-    return custom(`${user.username}'s email is already confirmed`, {
-      props: loginResponse?.props || null,
-    })
+    return custom(`${user.username}'s email is already confirmed`)
   }
 
   // If no code stored (never requested / already cleared)
@@ -108,16 +99,7 @@ const confirmEmail = async (props) => {
   const freshUser = await User.findById(user._id)
   if (!freshUser) return notFound("user")
 
-  const loginResponse = await login({
-    user: freshUser,
-    deviceId: deviceId || null,
-    ip,
-    userAgent,
-  })
-
-  return custom(`${freshUser.username}'s email confirmed successfully`, {
-    props: loginResponse?.props || null,
-  })
+  return custom(`${freshUser.username}'s email confirmed successfully`)
 }
 
 module.exports = confirmEmail
