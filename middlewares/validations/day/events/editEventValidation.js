@@ -26,7 +26,9 @@ const createEvent = async (req, res, next) => {
   req.params.eventId = normalizedEventId
 
   // Validations
-  if (description && description?.length > maxEventDescriptionLength)
+  if (description !== undefined && description !== null && typeof description !== "string")
+    return res.status(400).json({ message: "Invalid Event Description" })
+  if (typeof description === "string" && description.length > maxEventDescriptionLength)
     return res.status(413).json({ message: "Event Description is too long" })
   if (title && title?.length > maxEventTitleLength)
     return res.status(413).json({ message: "Event Title is too long" })

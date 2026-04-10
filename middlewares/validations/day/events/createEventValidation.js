@@ -27,11 +27,6 @@ const createEvent = async (req, res, next) => {
     if (typeof description !== "string") {
       return res.status(400).json({ message: "Invalid Event Description" })
     }
-    if (description.trim().length < 1) {
-      return res
-        .status(400)
-        .json({ message: "Event Description cannot be empty" })
-    }
     if (description.length > MAX_DESCRIPTION_LENGTH) {
       return res.status(413).json({ message: "Event Description is too long" })
     }
